@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Polimona — Музыкальный планер</title>
+
+  <!-- Responsive & iPhone Safari Viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- Apple Web App Metas -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Polimona">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Theme Color (Warm Clarified Butter) -->
+  <meta name="theme-color" content="#F7D778">
+  <meta name="msapplication-TileColor" content="#F7D778">
+
+  <!-- Icons & PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="app">
+    <!-- Sticky App Header -->
+    <header class="app-header">
+      <div class="header-top">
+        <div class="header-brand">
+          <div class="header-icon-box">𝄞</div>
+          <div>
+            <h1 class="app-title">Polimona</h1>
+            <div class="app-subtitle">Музыкальный планер</div>
+          </div>
+        </div>
+        <div class="header-right">
+          <span class="header-date-badge" id="currentDateBadge">Пн, 28 сен</span>
+        </div>
+      </div>
+
+      <!-- Musical 5-Staff Lines Motif -->
+      <div class="musical-staff-line" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </header>
+
+    <!-- Quick Status Summary Filter Bar -->
+    <section class="summary-bar" id="summaryBar" aria-label="Фильтры задач">
+      <button class="summary-pill active" data-filter="all">
+        <span>Все</span>
+        <span class="badge" id="countAll">0</span>
+      </button>
+      <button class="summary-pill burn-pill" data-filter="burning">
+        <span>🔥 Горят</span>
+        <span class="badge" id="countBurning">0</span>
+      </button>
+      <button class="summary-pill" data-filter="active">
+        <span>В работе</span>
+        <span class="badge" id="countActive">0</span>
+      </button>
+      <button class="summary-pill" data-filter="completed">
+        <span>✓ Сделано</span>
+        <span class="badge" id="countCompleted">0</span>
+      </button>
+    </section>
+
+    <!-- TAB 1: Tasks Screen (Main) -->
+    <main class="tab-content active" id="tab-tasks">
+      <!-- Search & View Toggle -->
+      <div class="search-filter-row">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input type="search" class="search-input" id="taskSearchInput" placeholder="Поиск по задачам и партитурам..." autocomplete="off">
+        </div>
+        <div class="view-mode-toggle">
+          <button class="view-mode-btn active" id="viewModeCategoriesBtn" title="По категориям">
+            📂
+          </button>
+          <button class="view-mode-btn" id="viewModeFlatBtn" title="Единым списком">
+            📜
+          </button>
+        </div>
+      </div>
+
+      <!-- Container for Tasks List (Rendered dynamically) -->
+      <div id="tasksListContainer">
+        <!-- Rendered by JS -->
+      </div>
+    </main>
+
+    <!-- TAB 2: Dual Calendar Screen (Двойной календарь) -->
+    <section class="tab-content" id="tab-calendar">
+      <!-- Dual Calendar Mode Switcher -->
+      <div class="calendar-switch-container">
+        <div class="calendar-segmented-control" role="tablist">
+          <button class="cal-segment-btn active" id="btnCalModeTasks" role="tab" aria-selected="true">
+            <span>🎼 Все задачи</span>
+          </button>
+          <button class="cal-segment-btn" id="btnCalModeTeaching" role="tab" aria-selected="false">
+            <span>🎹 Мои уроки и окна</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Month Navigation Bar -->
+      <div class="calendar-month-nav">
+        <button class="btn-cal-nav" id="btnCalPrevMonth" aria-label="Предыдущий месяц">‹</button>
+        <div class="cal-month-title-box">
+          <span class="cal-month-title" id="calMonthTitle">Сентябрь 2026</span>
+          <button class="btn-cal-today" id="btnCalToday">Сегодня</button>
+        </div>
+        <button class="btn-cal-nav" id="btnCalNextMonth" aria-label="Следующий месяц">›</button>
+      </div>
+
+      <!-- Calendar Month Grid Card -->
+      <div class="calendar-card">
+        <!-- Weekday Headers -->
+        <div class="calendar-weekdays">
+          <span>Пн</span>
+          <span>Вт</span>
+          <span>Ср</span>
+          <span>Чт</span>
+          <span>Пт</span>
+          <span>Сб</span>
+          <span>Вс</span>
+        </div>
+
+        <!-- Days Grid -->
+        <div class="calendar-days-grid" id="calendarDaysGrid">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Dynamic Legend Bar -->
+        <div class="calendar-legend-bar" id="calendarLegendBar">
+          <!-- Populated by JS based on Mode -->
+        </div>
+      </div>
+
+      <!-- Day Details Section (Tasks or Teaching Schedule) -->
+      <div class="calendar-day-details-section">
+        <div class="cal-day-header-row">
+          <div>
+            <h3 class="cal-day-heading" id="calSelectedDayHeading">28 сентября</h3>
+            <div class="cal-day-subheading" id="calSelectedDaySubheading">Понедельник</div>
+          </div>
+          <div id="calDayHeaderAction">
+            <!-- Dynamic button -->
+          </div>
+        </div>
+
+        <!-- Container for Day Tasks or Timeline -->
+        <div id="calendarDayDetailsContent">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Categories Screen -->
+    <section class="tab-content" id="tab-categories">
+      <div class="cat-screen-header">
+        <div>
+          <h2 class="section-heading">Категории</h2>
+          <p class="section-subheading">Музыкальные и персональные разделы задач</p>
+        </div>
+        <button class="btn-primary-ghost" id="openAddCategoryBtn">
+          <span>＋ Новая категория</span>
+        </button>
+      </div>
+
+      <!-- System Categories Section -->
+      <div class="category-block-section">
+        <div class="category-block-title">
+          <span>🎹 СТАНДАРТНЫЕ КАТЕГОРИИ</span>
+          <span class="badge-system-info">Системные</span>
+        </div>
+        <div class="category-manager-list" id="systemCategoryList">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="categories-divider" aria-hidden="true">
+        <span></span>
+        <div class="divider-icon">𝄞</div>
+        <span></span>
+      </div>
+
+      <!-- Custom Categories Section -->
+      <div class="category-block-section">
+        <div class="category-block-title">
+          <span>✨ ПОЛЬЗОВАТЕЛЬСКИЕ КАТЕГОРИИ</span>
+          <span class="cat-custom-count-badge" id="customCatCountBadge">0</span>
+        </div>
+        <div class="category-manager-list" id="customCategoryList">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Bottom Add Category Action Bar -->
+      <div class="cat-add-bottom-row">
+        <button class="btn-add-category-large" id="openAddCategoryBtnLarge">
+          <span>＋ Добавить категорию</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 4: Settings Screen -->
+    <section class="tab-content" id="tab-settings">
+      <h2 class="section-heading" style="margin-bottom: 16px;">Настройки</h2>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Атмосфера и звук</div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="settings-row-left">
+              <span class="settings-row-icon">🔔</span>
+              <div>
+                <div class="settings-row-label">Музыкальный аккорд</div>
+                <div class="settings-row-desc">Приятный перезвон при завершении задачи</div>
+              </div>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="settingSoundToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-left">
+              <span class="settings-row-icon">👁️</span>
+              <div>
+                <div class="settings-row-label">Скрывать выполненные</div>
+                <div class="settings-row-desc">Отображать только активные задачи</div>
+              </div>
+            </div>
+            <label class="ios-switch">
+              <input type="checkbox" id="settingHideCompletedToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Установка на iPhone</div>
+        <div class="settings-card" style="padding: 16px;">
+          <div style="display: flex; gap: 12px; align-items: flex-start;">
+            <div style="font-size: 26px;">📲</div>
+            <div>
+              <div style="font-weight: 700; color: var(--espresso-900); margin-bottom: 4px;">Как установить на экран «Домой»:</div>
+              <ol style="font-size: 13.5px; color: var(--espresso-700); padding-left: 18px; line-height: 1.5;">
+                <li>Откройте сайт в <b>Safari</b> на iPhone</li>
+                <li>Нажмите кнопку <b>«Поделиться»</b> (квадрат со стрелкой вверх)</li>
+                <li>Прокрутите вниз и выберите <b>«На экран „Домой“»</b></li>
+                <li>Нажмите <b>«Добавить»</b> в правом верхнем углу</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">Данные и резервные копии</div>
+        <div class="settings-card">
+          <div class="settings-row" id="btnExportData" style="cursor: pointer;">
+            <div class="settings-row-left">
+              <span class="settings-row-icon">💾</span>
+              <div>
+                <div class="settings-row-label">Экспорт данных (Backup)</div>
+                <div class="settings-row-desc">Сохранить задачи, категории и расписание в JSON</div>
+              </div>
+            </div>
+            <span style="color: var(--espresso-400);">➔</span>
+          </div>
+          <div class="settings-row" id="btnImportDataTrigger" style="cursor: pointer;">
+            <div class="settings-row-left">
+              <span class="settings-row-icon">📥</span>
+              <div>
+                <div class="settings-row-label">Импорт данных</div>
+                <div class="settings-row-desc">Восстановить задачи, категории и уроки из JSON</div>
+              </div>
+            </div>
+            <span style="color: var(--espresso-400);">➔</span>
+            <input type="file" id="fileImportInput" accept=".json" style="display: none;">
+          </div>
+          <div class="danger-btn-row">
+            <button class="btn-danger-outline" id="btnResetData">
+              🔄 Сбросить к демонстрационным данным
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 24px; padding-bottom: 20px;">
+        <div style="font-size: 20px; margin-bottom: 4px;">🎼 ☕ 🎹</div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--espresso-600);">Polimona Musical Planner • Автономная PWA</div>
+        <div style="font-size: 12px; color: var(--espresso-400); margin-top: 2px;">Создано с любовью к музыке и тёплому томлёному маслу</div>
+      </div>
+    </section>
+
+    <!-- Bottom Navigation Bar (iPhone Ergonomic 5-Tab Bar) -->
+    <nav class="bottom-nav" aria-label="Нижняя навигация">
+      <div class="nav-container">
+        <button class="nav-item active" data-tab="tab-tasks" id="navTasks">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Задачи</span>
+        </button>
+
+        <button class="nav-item" data-tab="tab-calendar" id="navCalendar">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Календарь</span>
+        </button>
+
+        <button class="nav-item nav-item-add" id="navAddTask" aria-label="Создать задачу">
+          <span class="nav-add-btn">➕</span>
+        </button>
+
+        <button class="nav-item" data-tab="tab-categories" id="navCategories">
+          <span class="nav-icon">📂</span>
+          <span class="nav-label">Категории</span>
+        </button>
+
+        <button class="nav-item" data-tab="tab-settings" id="navSettings">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Настройки</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- Modal Backdrop -->
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+
+    <!-- Bottom Sheet: Add / Edit Task Modal -->
+    <div class="bottom-sheet" id="taskSheet" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle">
+      <div class="sheet-handle-row" id="taskSheetHandle">
+        <div class="sheet-handle"></div>
+      </div>
+      <div class="sheet-header">
+        <div class="sheet-title" id="taskSheetTitle">Новая задача</div>
+        <button class="sheet-close-btn" id="closeTaskSheetBtn" aria-label="Закрыть">✕</button>
+      </div>
+
+      <form id="taskForm" class="sheet-body">
+        <input type="hidden" id="taskIdInput">
+
+        <!-- 1. Название задачи -->
+        <div class="form-group">
+          <label class="form-label" for="taskTitleInput">
+            <span>Название задачи</span>
+            <span style="color: var(--burn-text);">*</span>
+          </label>
+          <input type="text" id="taskTitleInput" class="form-input" placeholder="Например: Записать вокальные гармонии" required autocomplete="off">
+        </div>
+
+        <!-- 2. Описание -->
+        <div class="form-group">
+          <label class="form-label" for="taskDescInput">
+            <span>Описание</span>
+            <span class="form-label-hint">(необязательно)</span>
+          </label>
+          <textarea id="taskDescInput" class="form-textarea" placeholder="Детали, тональность, контакты звукорежиссёра..."></textarea>
+        </div>
+
+        <!-- 3. Категория -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <label class="form-label">
+              <span>Категория</span>
+              <span style="color: var(--burn-text);">*</span>
+            </label>
+            <span class="form-label-hint" id="taskCategoryHint">Выберите категорию</span>
+          </div>
+          <div class="category-radio-grid-scroll">
+            <div class="category-radio-grid" id="taskCategoryOptions">
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 & 5. Дата и Время дедлайна -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="taskDeadlineDate">
+              <span>📅 Дата дедлайна</span>
+            </label>
+            <input type="date" id="taskDeadlineDate" class="form-input">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="taskDeadlineTime">
+              <span>⏰ Время</span>
+            </label>
+            <input type="time" id="taskDeadlineTime" class="form-input" value="18:00">
+          </div>
+        </div>
+
+        <!-- 6. Приоритет -->
+        <div class="form-group">
+          <label class="form-label">
+            <span>Приоритет</span>
+          </label>
+          <div class="priority-selector">
+            <label class="priority-option opt-high">
+              <input type="radio" name="priority" value="high">
+              <div class="priority-label">
+                <span class="priority-symbol">𝆑𝆑</span>
+                <span>Высокий</span>
+              </div>
+            </label>
+            <label class="priority-option opt-medium">
+              <input type="radio" name="priority" value="medium" checked>
+              <div class="priority-label">
+                <span class="priority-symbol">𝆑</span>
+                <span>Средний</span>
+              </div>
+            </label>
+            <label class="priority-option opt-low">
+              <input type="radio" name="priority" value="low">
+              <div class="priority-label">
+                <span class="priority-symbol">𝆏</span>
+                <span>Обычный</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-delete-task" id="deleteTaskBtn" style="display: none;" title="Удалить задачу">
+            🗑️
+          </button>
+          <button type="button" class="btn-cancel" id="cancelTaskBtn">Отмена</button>
+          <button type="submit" class="btn-submit-task" id="saveTaskBtn">Сохранить</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Bottom Sheet: Add / Edit Category Modal -->
+    <div class="bottom-sheet" id="categorySheet" role="dialog" aria-modal="true" aria-labelledby="catSheetTitle">
+      <div class="sheet-handle-row" id="catSheetHandle">
+        <div class="sheet-handle"></div>
+      </div>
+      <div class="sheet-header">
+        <div class="sheet-title" id="catSheetTitle">Новая категория</div>
+        <button class="sheet-close-btn" id="closeCatSheetBtn" aria-label="Закрыть">✕</button>
+      </div>
+
+      <form id="categoryForm" class="sheet-body">
+        <input type="hidden" id="catIdInput">
+
+        <div class="form-group">
+          <label class="form-label" for="catNameInput">
+            <span>Название категории</span>
+            <span style="color: var(--burn-text);">*</span>
+          </label>
+          <input type="text" id="catNameInput" class="form-input" placeholder="Например: 🎻 Репетиции или 🎸 Гитара" required autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            <span>Выберите музыкальную иконку</span>
+          </label>
+          <div class="cat-emoji-picker-grid" id="catEmojiPicker">
+            <!-- Emoji buttons populated by JS -->
+          </div>
+          <input type="hidden" id="catSelectedIcon" value="🎻">
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-cancel" id="cancelCatBtn">Отмена</button>
+          <button type="submit" class="btn-submit-task" id="saveCatBtn">Создать</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Bottom Sheet: Safe Category Deletion with Task Reassignment -->
+    <div class="bottom-sheet" id="deleteCategorySheet" role="dialog" aria-modal="true" aria-labelledby="deleteCatSheetTitle">
+      <div class="sheet-handle-row" id="deleteCatSheetHandle">
+        <div class="sheet-handle"></div>
+      </div>
+      <div class="sheet-header">
+        <div class="sheet-title" id="deleteCatSheetTitle">Удалить категорию?</div>
+        <button class="sheet-close-btn" id="closeDeleteCatSheetBtn" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="sheet-body">
+        <input type="hidden" id="deleteTargetCatId">
+
+        <div class="delete-cat-info-card">
+          <div class="delete-cat-icon-large" id="deleteCatIconDisplay">🎸</div>
+          <div style="flex: 1;">
+            <div class="delete-cat-name-display" id="deleteCatNameDisplay">Гитара</div>
+            <div class="delete-cat-count-display" id="deleteCatCountDisplay">В этой категории 3 задачи</div>
+          </div>
+        </div>
+
+        <div id="migrationOptionBox" class="migration-option-box">
+          <div class="migration-box-title">
+            <span>⚠️ Что сделать с задачами?</span>
+          </div>
+          <p class="migration-box-desc">
+            Все задачи из этой категории будут бережно сохранены и перенесены в выбранную категорию:
+          </p>
+          <div class="form-group" style="margin-top: 8px;">
+            <label class="form-label" for="migrationTargetSelect">Перенести задачи в:</label>
+            <select id="migrationTargetSelect" class="form-select">
+              <!-- Populated by JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="sheet-actions" style="margin-top: 10px;">
+          <button type="button" class="btn-cancel" id="cancelDeleteCatBtn">Отмена</button>
+          <button type="button" class="btn-danger-confirm" id="confirmDeleteCatBtn">Удалить категорию</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet: Add / Edit Teaching Lesson Modal -->
+    <div class="bottom-sheet" id="lessonSheet" role="dialog" aria-modal="true" aria-labelledby="lessonSheetTitle">
+      <div class="sheet-handle-row" id="lessonSheetHandle">
+        <div class="sheet-handle"></div>
+      </div>
+      <div class="sheet-header">
+        <div class="sheet-title" id="lessonSheetTitle">Записать урок</div>
+        <button class="sheet-close-btn" id="closeLessonSheetBtn" aria-label="Закрыть">✕</button>
+      </div>
+
+      <form id="lessonForm" class="sheet-body">
+        <input type="hidden" id="lessonIdInput">
+
+        <div class="form-group">
+          <label class="form-label" for="lessonStudentInput">
+            <span>Ученик</span>
+            <span style="color: var(--burn-text);">*</span>
+          </label>
+          <input type="text" id="lessonStudentInput" class="form-input" placeholder="Например: Анна С. или Марк" required autocomplete="off">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Предмет / Направление</label>
+          <div class="lesson-subject-chips" id="lessonSubjectChips">
+            <button type="button" class="subject-chip active" data-subject="Вокал">🎤 Вокал</button>
+            <button type="button" class="subject-chip" data-subject="Фортепиано">🎹 Фортепиано</button>
+            <button type="button" class="subject-chip" data-subject="Сольфеджио">🎼 Сольфеджио</button>
+            <button type="button" class="subject-chip" data-subject="Гитара">🎸 Гитара</button>
+            <button type="button" class="subject-chip" data-subject="Скрипка">🎻 Скрипка</button>
+            <button type="button" class="subject-chip" data-subject="Теория">📚 Теория</button>
+          </div>
+          <input type="hidden" id="lessonSubjectInput" value="Вокал">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="lessonDateInput">📅 Дата урока</label>
+          <input type="date" id="lessonDateInput" class="form-input" required>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="lessonStartTimeInput">⏰ Начало</label>
+            <input type="time" id="lessonStartTimeInput" class="form-input" value="14:00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lessonEndTimeInput">⏰ Окончание</label>
+            <input type="time" id="lessonEndTimeInput" class="form-input" value="15:00" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="lessonNotesInput">
+            <span>Заметки и ДЗ</span>
+            <span class="form-label-hint">(необязательно)</span>
+          </label>
+          <textarea id="lessonNotesInput" class="form-textarea" placeholder="Гаммы, репертуар, прогресс, оплата..."></textarea>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-delete-task" id="deleteLessonBtn" style="display: none;" title="Удалить урок">
+            🗑️
+          </button>
+          <button type="button" class="btn-cancel" id="cancelLessonBtn">Отмена</button>
+          <button type="submit" class="btn-submit-task" id="saveLessonBtn">Сохранить</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div class="toast-banner" id="toastBanner" role="status" aria-live="polite">
+      <span id="toastIcon">✨</span>
+      <span id="toastMessage">Задача сохранена</span>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Service Worker Registration for PWA -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('Polimona ServiceWorker registered:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('ServiceWorker registration error:', err);
+          });
+      });
+    }
+  </script>
+</body>
+</html>

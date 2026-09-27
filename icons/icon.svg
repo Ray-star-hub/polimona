@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Clarified Butter Gradient -->
+    <linearGradient id="butterBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF5CE"/>
+      <stop offset="50%" stop-color="#F6D77D"/>
+      <stop offset="100%" stop-color="#E2B743"/>
+    </linearGradient>
+
+    <!-- Inner Glow -->
+    <radialGradient id="softGlow" cx="30%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#E2B743" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Note & Clef Gradient -->
+    <linearGradient id="espressoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3E2619"/>
+      <stop offset="100%" stop-color="#1F120A"/>
+    </linearGradient>
+
+    <!-- Gold Accent Gradient -->
+    <linearGradient id="goldAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF0A0"/>
+      <stop offset="50%" stop-color="#DFAD28"/>
+      <stop offset="100%" stop-color="#9A700E"/>
+    </linearGradient>
+
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#4E3516" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Base Squircle -->
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#butterBg)"/>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#softGlow)"/>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="none" stroke="#FEEBB0" stroke-width="4" stroke-opacity="0.7"/>
+
+  <!-- Subtle Musical Staff Lines -->
+  <g stroke="#C6992E" stroke-opacity="0.32" stroke-width="3.5" stroke-linecap="round">
+    <line x1="84" y1="180" x2="428" y2="180" />
+    <line x1="84" y1="216" x2="428" y2="216" />
+    <line x1="84" y1="252" x2="428" y2="252" />
+    <line x1="84" y1="288" x2="428" y2="288" />
+    <line x1="84" y1="324" x2="428" y2="324" />
+  </g>
+
+  <!-- Piano Keys Mini Motif on Bottom -->
+  <g transform="translate(146, 368)" filter="drop-shadow(0px 3px 6px rgba(44,30,22,0.15))">
+    <!-- White Keys Base -->
+    <rect x="0" y="0" width="220" height="48" rx="8" fill="#FFFDF8" stroke="#E6D3B3" stroke-width="2"/>
+    <!-- Key dividers -->
+    <line x1="31.4" y1="0" x2="31.4" y2="48" stroke="#E6D3B3" stroke-width="1.5"/>
+    <line x1="62.8" y1="0" x2="62.8" y2="48" stroke="#E6D3B3" stroke-width="1.5"/>
+    <line x1="94.2" y1="0" x2="94.2" y2="48" stroke="#E6D3B3" stroke-width="1.5"/>
+    <line x1="125.6" y1="0" x2="125.6" y2="48" stroke="#E6D3B3" stroke-width="1.5"/>
+    <line x1="157.0" y1="0" x2="157.0" y2="48" stroke="#E6D3B3" stroke-width="1.5"/>
+    <line x1="188.4" y1="0" x2="188.4" y2="48" stroke="#E6D3B3" stroke-width="1.5"/>
+    <!-- Black Keys -->
+    <rect x="22" y="0" width="18" height="28" rx="3" fill="#2C1E16"/>
+    <rect x="53" y="0" width="18" height="28" rx="3" fill="#2C1E16"/>
+    <rect x="116" y="0" width="18" height="28" rx="3" fill="#2C1E16"/>
+    <rect x="147" y="0" width="18" height="28" rx="3" fill="#2C1E16"/>
+    <rect x="178" y="0" width="18" height="28" rx="3" fill="#2C1E16"/>
+  </g>
+
+  <!-- Musical Treble Clef & Checkmark Fusion -->
+  <g filter="url(#cardShadow)">
+    <!-- Main Treble Clef Path -->
+    <path d="M256,92 C268,92 278,103 277,117 C275,138 259,166 244,196 C238,208 233,222 232,236 C238,228 248,222 260,222 C285,222 308,242 308,272 C308,306 280,332 245,332 C210,332 186,303 186,268 C186,220 216,170 241,126 C247,115 251,105 251,98 C251,94 248,90 242,90 C234,90 224,98 214,115 C208,125 197,126 191,118 C185,111 187,98 198,84 C214,64 235,54 252,54 C272,54 286,69 286,91 C286,115 272,143 259,169 L251,185 C271,192 289,206 303,225 C319,247 326,274 322,302 C316,339 285,366 244,366 C238,366 233,365 228,364 L228,380 C228,400 236,412 248,418 C256,422 258,432 253,440 C248,447 238,449 230,444 C210,433 198,411 198,380 L198,353 C182,340 170,320 166,297 C160,265 171,232 192,207 C199,199 207,192 216,186 C219,178 223,170 228,161 C239,141 251,120 252,108 C253,101 250,98 246,98 C242,98 238,102 233,109 C228,117 218,117 212,110 C207,103 209,92 218,80 C229,66 244,58 259,58 C279,58 296,74 296,98 Z M244,248 C238,248 233,251 229,256 C228,266 228,278 229,291 C233,294 238,296 244,296 C260,296 272,284 272,270 C272,256 261,248 244,248 Z" 
+          fill="url(#espressoGrad)" />
+
+    <!-- Musical Eighth Note accent floating gracefully -->
+    <g transform="translate(320, 130) scale(0.85)">
+      <ellipse cx="28" cy="72" rx="18" ry="13" transform="rotate(-25 28 72)" fill="url(#espressoGrad)"/>
+      <rect x="40" y="16" width="7" height="58" rx="3.5" fill="url(#espressoGrad)"/>
+      <path d="M47,16 C60,16 75,25 76,46 C67,36 57,34 47,34 Z" fill="url(#espressoGrad)"/>
+    </g>
+
+    <!-- Warm Golden Sparkle (Deadline & Completion Sparkle) -->
+    <path d="M375,100 C375,115 390,115 390,115 C390,115 375,115 375,130 C375,115 360,115 360,115 C360,115 375,115 375,100 Z" fill="url(#goldAccent)"/>
+    <circle cx="375" cy="115" r="3" fill="#FFFBE6"/>
+  </g>
+</svg>
