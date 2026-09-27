@@ -73,326 +73,64 @@ class StorageService {
       this.saveUIState(DEFAULT_UI_STATE);
     }
 
-    // 4. Tasks Seed
+    // 4. Tasks (Clean slate, no demo data)
     if (!localStorage.getItem(STORAGE_KEYS.TASKS)) {
-      const now = new Date();
-      const todayStr = this.formatDateIso(now);
-
-      const burningDate = new Date(now.getTime() + 6 * 60 * 60 * 1000);
-      const burningDateStr = this.formatDateIso(burningDate);
-      const burningTimeStr = this.formatTimeIso(burningDate);
-
-      const overdueDate = new Date(now.getTime() - 26 * 60 * 60 * 1000);
-      const overdueDateStr = this.formatDateIso(overdueDate);
-      const overdueTimeStr = this.formatTimeIso(overdueDate);
-
-      const futureDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
-      const futureDateStr = this.formatDateIso(futureDate);
-
-      const nextWeekDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const nextWeekDateStr = this.formatDateIso(nextWeekDate);
-
-      // Compute Monday of current week
-      const dayOfWeek = now.getDay();
-      const diffToMon = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      const monDate = new Date(now);
-      monDate.setDate(diffToMon);
-
-      const getWeekDate = (offset) => {
-        const d = new Date(monDate);
-        d.setDate(monDate.getDate() + offset);
-        return this.formatDateIso(d);
-      };
-
-      const monStr = getWeekDate(0);
-      const tueStr = getWeekDate(1);
-      const wedStr = getWeekDate(2);
-      const thuStr = getWeekDate(3);
-      const friStr = getWeekDate(4);
-      const satStr = getWeekDate(5);
-      const sunStr = getWeekDate(6);
-
-      const sampleTasks = [
-        {
-          id: 'task-seed-1',
-          title: 'Финальный саундчек перед акустическим сетом',
-          description: 'Проверить микрофон Shure SM58, отстроить мониторную линию и пресеты реверберации.',
-          categoryId: 'cat-performance',
-          taskType: 'deadline',
-          isDeadline: true,
-          deadlineDate: burningDateStr,
-          deadlineTime: burningTimeStr,
-          priority: 'high',
-          completed: false,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'task-seed-2',
-          title: 'Сдать нотную партитуру для струнного квартета',
-          description: 'Внести правки дирижёра в партию альта и распечатать чистые партии.',
-          categoryId: 'cat-study',
-          taskType: 'deadline',
-          isDeadline: true,
-          deadlineDate: overdueDateStr,
-          deadlineTime: overdueTimeStr,
-          priority: 'high',
-          completed: false,
-          createdAt: new Date(Date.now() - 3 * 86400000).toISOString()
-        },
-        {
-          id: 'task-seed-3',
-          title: 'Пара: БЖД',
-          description: 'Аудитория 204. Зачётные нормативы и конспект.',
-          categoryId: 'cat-study',
-          taskType: 'regular',
-          isDeadline: false,
-          deadlineDate: monStr,
-          deadlineTime: '11:40',
-          deadlineEndTime: '12:40',
-          priority: 'medium',
-          completed: false,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'task-seed-4',
-          title: 'Пара: Полифония',
-          description: 'Аудитория 304. Модуляции в тональности второй степени родства.',
-          categoryId: 'cat-study',
-          taskType: 'regular',
-          isDeadline: false,
-          deadlineDate: monStr,
-          deadlineTime: '13:30',
-          deadlineEndTime: '15:00',
-          priority: 'medium',
-          completed: false,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: 'task-seed-5',
-          title: 'Купить новый комплект струн D\'Addario',
-          description: 'Зайти в музыкальный магазин после занятий, калибр 11-52.',
-          categoryId: 'cat-personal',
-          taskType: 'regular',
-          isDeadline: false,
-          deadlineDate: '',
-          deadlineTime: '',
-          deadlineEndTime: '',
-          priority: 'low',
-          completed: false,
-          createdAt: new Date().toISOString()
-        }
-      ];
-
-      this.saveTasks(sampleTasks);
+      this.saveTasks([]);
     }
 
-    // 5. Teaching Lessons Seed (Matching user's timetable screenshot)
-    if (!localStorage.getItem(STORAGE_KEYS.LESSONS) || !localStorage.getItem('polimona_timeline_seeded_v8')) {
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diffToMon = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      const monDate = new Date(now);
-      monDate.setDate(diffToMon);
+    // 5. Teaching Lessons (Clean slate, no demo data)
+    if (!localStorage.getItem(STORAGE_KEYS.LESSONS)) {
+      this.saveLessons([]);
+    }
 
-      const getWeekDate = (offset) => {
-        const d = new Date(monDate);
-        d.setDate(monDate.getDate() + offset);
-        return this.formatDateIso(d);
-      };
+    // 6. Automatic Purge of Demonstration Data from client storage
+    if (!localStorage.getItem('polimona_demo_purged_v10')) {
+      try {
+        const demoTaskTitles = [
+          'финальный саундчек перед акустическим сетом',
+          'сдать нотную партитуру для струнного квартета',
+          'пара: бжд',
+          'пара: полифония',
+          'купить новый комплект струн d\'addario'
+        ];
 
-      const tueStr = getWeekDate(1);
-      const wedStr = getWeekDate(2);
-      const thuStr = getWeekDate(3);
-      const friStr = getWeekDate(4);
-      const satStr = getWeekDate(5);
-      const sunStr = getWeekDate(6);
+        const demoLessonNames = [
+          'ольга урок',
+          'кристина урок',
+          'виктория урок',
+          'анастасия урок',
+          'урок артур (германия)',
+          'сафина урок',
+          'сергей урок',
+          'даня урок',
+          'юрий урок',
+          'рассылка расписания'
+        ];
 
-      const sampleLessons = [
-        // Tue (29):
-        {
-          id: 'lesson-s-1',
-          date: tueStr,
-          startTime: '13:00',
-          endTime: '14:00',
-          studentName: 'Ольга урок',
-          subject: 'Вокал',
-          notes: 'Постановка дыхания',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-2',
-          date: tueStr,
-          startTime: '14:30',
-          endTime: '16:00',
-          studentName: 'Кристина урок',
-          subject: 'Фортепиано',
-          notes: 'Гаммы, репертуар',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-3',
-          date: tueStr,
-          startTime: '18:15',
-          endTime: '19:15',
-          studentName: 'Виктория урок',
-          subject: 'Вокал',
-          notes: 'Распевка, дыхание',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-4',
-          date: tueStr,
-          startTime: '19:15',
-          endTime: '20:15',
-          studentName: 'Анастасия урок',
-          subject: 'Фортепиано',
-          notes: 'Сольфеджио, чтение нот',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-5',
-          date: tueStr,
-          startTime: '20:15',
-          endTime: '21:15',
-          studentName: 'Урок Артур (Германия)',
-          subject: 'Вокал',
-          notes: 'Онлайн урок, Zoom',
-          status: 'scheduled'
-        },
+        const currentTasks = this.getTasks();
+        const cleanedTasks = currentTasks.filter(t => {
+          if (!t) return false;
+          if (t.id && (t.id.startsWith('task-seed-') || t.id.startsWith('task-sample-'))) return false;
+          const title = (t.title || '').trim().toLowerCase();
+          if (demoTaskTitles.some(dt => title.includes(dt) || dt.includes(title))) return false;
+          return true;
+        });
+        this.saveTasks(cleanedTasks);
 
-        // Wed (30):
-        {
-          id: 'lesson-s-6',
-          date: wedStr,
-          startTime: '15:00',
-          endTime: '16:00',
-          studentName: 'Сафина урок',
-          subject: 'Вокал',
-          notes: 'Подготовка к конкурсу',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-7',
-          date: wedStr,
-          startTime: '17:00',
-          endTime: '18:00',
-          studentName: 'Сергей урок',
-          subject: 'Гитара',
-          notes: 'Аккорды, ритмика',
-          status: 'scheduled'
-        },
-
-        // Thu (1):
-        {
-          id: 'lesson-s-8',
-          date: thuStr,
-          startTime: '14:30',
-          endTime: '16:00',
-          studentName: 'Кристина урок',
-          subject: 'Фортепиано',
-          notes: 'Пальцевая техника',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-9',
-          date: thuStr,
-          startTime: '18:00',
-          endTime: '19:00',
-          studentName: 'Даня урок',
-          subject: 'Вокал',
-          notes: 'Интонация, фразировка',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-10',
-          date: thuStr,
-          startTime: '19:00',
-          endTime: '20:00',
-          studentName: 'Виктория урок',
-          subject: 'Вокал',
-          notes: 'Эстрадный вокал',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-11',
-          date: thuStr,
-          startTime: '20:00',
-          endTime: '21:00',
-          studentName: 'Урок Артур (Германия)',
-          subject: 'Вокал',
-          notes: 'Онлайн урок',
-          status: 'scheduled'
-        },
-
-        // Fri (2):
-        {
-          id: 'lesson-s-12',
-          date: friStr,
-          startTime: '13:00',
-          endTime: '14:00',
-          studentName: 'Ольга урок',
-          subject: 'Вокал',
-          notes: 'Репертуар',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-13',
-          date: friStr,
-          startTime: '15:00',
-          endTime: '16:00',
-          studentName: 'Сафина урок',
-          subject: 'Вокал',
-          notes: 'Распевки',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-14',
-          date: friStr,
-          startTime: '17:00',
-          endTime: '18:00',
-          studentName: 'Анастасия урок',
-          subject: 'Фортепиано',
-          notes: 'Блюзовый квадрат',
-          status: 'scheduled'
-        },
-
-        // Sat (3):
-        {
-          id: 'lesson-s-15',
-          date: satStr,
-          startTime: '11:00',
-          endTime: '12:00',
-          studentName: 'Юрий урок',
-          subject: 'Гитара',
-          notes: 'Фингерстайл',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-s-16',
-          date: satStr,
-          startTime: '13:00',
-          endTime: '14:00',
-          studentName: 'Даня урок',
-          subject: 'Вокал',
-          notes: 'Дыхание',
-          status: 'scheduled'
-        },
-
-        // Sun (4):
-        {
-          id: 'lesson-s-17',
-          date: sunStr,
-          startTime: '13:00',
-          endTime: '14:00',
-          studentName: 'Рассылка Расписания',
-          subject: 'Теория',
-          notes: 'Согласовать время уроков на следующую неделю',
-          status: 'scheduled'
-        }
-      ];
-
-      this.saveLessons(sampleLessons);
-      localStorage.setItem('polimona_timeline_seeded_v8', 'true');
+        const currentLessons = this.getLessons();
+        const cleanedLessons = currentLessons.filter(l => {
+          if (!l) return false;
+          if (l.id && (l.id.startsWith('lesson-s-') || l.id.startsWith('lesson-seed-') || l.id.startsWith('lesson-sample-'))) return false;
+          const sName = (l.studentName || '').trim().toLowerCase();
+          if (demoLessonNames.some(dl => sName.includes(dl) || dl.includes(sName))) return false;
+          return true;
+        });
+        this.saveLessons(cleanedLessons);
+      } catch (err) {
+        console.warn('Error purging demo data:', err);
+      }
+      localStorage.removeItem('polimona_timeline_seeded_v8');
+      localStorage.setItem('polimona_demo_purged_v10', 'true');
     }
   }
 
@@ -757,6 +495,8 @@ class StorageService {
     localStorage.removeItem(STORAGE_KEYS.LESSONS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
     localStorage.removeItem(STORAGE_KEYS.UI_STATE);
+    localStorage.removeItem('polimona_timeline_seeded_v8');
+    localStorage.setItem('polimona_demo_purged_v10', 'true');
     this.initDefaultsIfEmpty();
   }
 }

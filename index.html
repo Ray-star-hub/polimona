@@ -24,7 +24,7 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=2.5">
+  <link rel="stylesheet" href="css/style.css?v=2.6">
 </head>
 <body>
 
@@ -361,7 +361,7 @@
             <div class="settings-row-left">
               <span class="settings-row-icon">⚡</span>
               <div>
-                <div class="settings-row-label">Обновить приложение (v2.2)</div>
+                <div class="settings-row-label">Обновить приложение (v2.6)</div>
                 <div class="settings-row-desc">Очистить кэш браузера и загрузить свежую версию</div>
               </div>
             </div>
@@ -369,7 +369,7 @@
           </div>
           <div class="danger-btn-row">
             <button class="btn-danger-outline" id="btnResetData">
-              🔄 Сбросить к демонстрационным данным
+              🗑️ Очистить все данные (задачи и расписание)
             </button>
           </div>
         </div>
@@ -727,15 +727,15 @@
   </div>
 
   <!-- Scripts with cache busting query params -->
-  <script src="js/storage.js?v=2.5"></script>
-  <script src="js/audio.js?v=2.5"></script>
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/storage.js?v=2.6"></script>
+  <script src="js/audio.js?v=2.6"></script>
+  <script src="js/app.js?v=2.6"></script>
 
   <!-- Service Worker Registration with Automatic Update & Claim Reload -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2.5')
+        navigator.serviceWorker.register('./sw.js?v=2.6')
           .then((reg) => {
             console.log('Polimona ServiceWorker registered:', reg.scope);
             reg.update();

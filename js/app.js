@@ -2847,15 +2847,15 @@
       fileImportInput.value = '';
     });
 
-    // Reset to defaults
+    // Reset / Clear all data
     btnResetData.addEventListener('click', () => {
-      if (confirm('Сбросить все задачи, категории и расписание к начальным демонстрационным?')) {
+      if (confirm('Очистить все задачи и расписание? Все данные будут удалены.')) {
         window.storageService.resetToDefaults();
         loadData();
         initCalendarState();
         applyStoredStateToUI();
         renderApp();
-        showToast('🔄 Данные сброшены к начальным');
+        showToast('🗑️ Все данные очищены');
       }
     });
 
