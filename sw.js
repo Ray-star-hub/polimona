@@ -3,7 +3,7 @@
  * Robust offline PWA support for iPhone Safari and GitHub Pages
  */
 
-const CACHE_NAME = 'polimona-music-todo-v4';
+const CACHE_NAME = 'polimona-music-todo-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -44,23 +44,40 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  // 1. For HTML document navigation: Network-First (with cache fallback) so updates show immediately
+  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cached) => {
+            return cached || caches.match('./index.html') || caches.match('./');
+          });
+        })
+    );
+    return;
+  }
+
+  // 2. For other assets (CSS, JS, icons): Cache-First with background revalidation
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
-        // Serve from cache, update in background if online
         fetch(event.request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, networkResponse.clone());
             });
           }
-        }).catch(() => {
-          // Offline, cached response was already served
-        });
+        }).catch(() => {});
         return cachedResponse;
       }
 
-      // Not in cache, fetch from network
       return fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
@@ -69,13 +86,6 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Offline fallback for navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html').then((indexFallback) => {
-            return indexFallback || caches.match('./');
-          });
-        }
       });
     })
   );
