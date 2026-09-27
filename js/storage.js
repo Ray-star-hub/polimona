@@ -121,27 +121,29 @@ class StorageService {
         },
         {
           id: 'task-seed-3',
-          title: 'Сходить на пару по полифонии и гармонии',
-          description: 'Аудитория 304. Разобрать модуляцию в тональности второй степени родства.',
+          title: 'Пара: БЖД',
+          description: 'Аудитория 204. Зачётные нормативы и конспект.',
           categoryId: 'cat-study',
           taskType: 'regular',
           isDeadline: false,
           deadlineDate: todayStr,
-          deadlineTime: '13:30',
+          deadlineTime: '11:40',
+          deadlineEndTime: '12:40',
           priority: 'medium',
           completed: false,
           createdAt: new Date().toISOString()
         },
         {
           id: 'task-seed-4',
-          title: 'Разучить гармоническую последовательность в Gm',
-          description: 'Отработать джазовые альтерации и аппликатуры левой руки.',
-          categoryId: 'cat-music',
+          title: 'Пара: Полифония',
+          description: 'Аудитория 304. Модуляции в тональности второй степени родства.',
+          categoryId: 'cat-study',
           taskType: 'regular',
           isDeadline: false,
-          deadlineDate: futureDateStr,
-          deadlineTime: '20:00',
-          priority: 'low',
+          deadlineDate: todayStr,
+          deadlineTime: '13:30',
+          deadlineEndTime: '15:00',
+          priority: 'medium',
           completed: false,
           createdAt: new Date().toISOString()
         },
@@ -154,6 +156,7 @@ class StorageService {
           isDeadline: false,
           deadlineDate: '',
           deadlineTime: '',
+          deadlineEndTime: '',
           priority: 'low',
           completed: false,
           createdAt: new Date().toISOString()
@@ -167,6 +170,7 @@ class StorageService {
           isDeadline: false,
           deadlineDate: overdueDateStr,
           deadlineTime: '12:00',
+          deadlineEndTime: '13:00',
           priority: 'low',
           completed: true,
           completedAt: new Date().toISOString(),
@@ -191,25 +195,25 @@ class StorageService {
       const afterTomorrowStr = this.formatDateIso(afterTomorrow);
 
       const sampleLessons = [
-        // Today: 2 lessons with free windows in-between (green window!)
+        // Today: Lessons matching schedule
         {
           id: 'lesson-seed-1',
           date: todayStr,
-          startTime: '11:00',
-          endTime: '12:00',
-          studentName: 'Анна К.',
+          startTime: '12:00',
+          endTime: '13:00',
+          studentName: 'Руслана 2/4',
           subject: 'Вокал',
-          notes: 'Распевка, постановка опоры дыхания, песня Adele',
+          notes: 'Распевка, дыхание, вокальный репертуар',
           status: 'scheduled'
         },
         {
           id: 'lesson-seed-2',
           date: todayStr,
-          startTime: '16:00',
-          endTime: '17:00',
-          studentName: 'Михаил Т.',
+          startTime: '19:00',
+          endTime: '20:00',
+          studentName: 'Татьяна Высокосова',
           subject: 'Фортепиано',
-          notes: 'Гамма ми-минор, Лунная соната 1-я часть',
+          notes: 'Чтение нот, блюзовый квадрат, оплата +3200',
           status: 'scheduled'
         },
 

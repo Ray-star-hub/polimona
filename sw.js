@@ -3,7 +3,7 @@
  * Robust offline PWA support for iPhone Safari and GitHub Pages
  */
 
-const CACHE_NAME = 'polimona-music-todo-v5';
+const CACHE_NAME = 'polimona-music-todo-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

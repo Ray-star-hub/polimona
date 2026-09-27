@@ -148,6 +148,40 @@
         <div class="calendar-legend-bar" id="calendarLegendBar">
           <!-- Populated by JS based on Mode -->
         </div>
+
+        <!-- Floating Day Popover Card (Мини-меню как на фото) -->
+        <div class="calendar-popover-backdrop" id="calendarPopoverBackdrop" style="display: none;"></div>
+        <div class="calendar-popover" id="calendarPopover" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="popoverDateHeading">
+          <div class="popover-beak" id="popoverBeak"></div>
+          
+          <div class="popover-top-bar">
+            <div class="popover-date-badge" id="popoverDateBadge">
+              <span id="popoverDayNum">28</span>
+              <span id="popoverDayName">пн</span>
+            </div>
+            <div class="popover-title-info">
+              <div class="popover-heading" id="popoverDateHeading">28 сентября</div>
+              <div class="popover-subheading" id="popoverItemsCount">3 события</div>
+            </div>
+            <button type="button" class="popover-close-btn" id="closePopoverBtn" aria-label="Закрыть">✕</button>
+          </div>
+
+          <div class="popover-items-list" id="popoverItemsList">
+            <!-- Rendered by JS -->
+          </div>
+
+          <div class="popover-footer-actions">
+            <button type="button" class="popover-act-btn" id="popoverAddTaskBtn">
+              <span class="act-icon">＋</span>
+              <span>Задача</span>
+            </button>
+            <div class="popover-act-divider"></div>
+            <button type="button" class="popover-act-btn" id="popoverAddLessonBtn">
+              <span class="act-icon">＋</span>
+              <span>Урок</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Day Details Section (Tasks or Teaching Schedule) -->
@@ -416,22 +450,46 @@
           </div>
         </div>
 
-        <!-- 4 & 5. Дата и Время -->
+        <!-- 4. Дата -->
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <label class="form-label" for="taskDeadlineDate">
+              <span id="taskDateLabel">📅 Дата</span>
+            </label>
+            <button type="button" class="btn-clear-date" id="btnClearTaskDate" title="Очистить дату">✕ Без даты</button>
+          </div>
+          <input type="date" id="taskDeadlineDate" class="form-input">
+        </div>
+
+        <!-- 5. Время с ... по ... (необязательное окончание) -->
         <div class="form-row-2">
           <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: baseline;">
-              <label class="form-label" for="taskDeadlineDate">
-                <span id="taskDateLabel">📅 Дата</span>
-              </label>
-              <button type="button" class="btn-clear-date" id="btnClearTaskDate" title="Очистить дату">✕ Без даты</button>
-            </div>
-            <input type="date" id="taskDeadlineDate" class="form-input">
+            <label class="form-label" for="taskDeadlineTime">
+              <span id="taskTimeLabel">⏰ Время с</span>
+            </label>
+            <input type="time" id="taskDeadlineTime" class="form-input" value="11:40">
           </div>
           <div class="form-group">
-            <label class="form-label" for="taskDeadlineTime">
-              <span id="taskTimeLabel">⏰ Время</span>
-            </label>
-            <input type="time" id="taskDeadlineTime" class="form-input" value="13:30">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="form-label" for="taskDeadlineEndTime">
+                <span>по</span>
+                <span class="form-label-hint">(необяз.)</span>
+              </label>
+              <span class="duration-computed-badge" id="taskDurationBadge"></span>
+            </div>
+            <input type="time" id="taskDeadlineEndTime" class="form-input" placeholder="Необязательно">
+          </div>
+        </div>
+
+        <!-- Быстрый выбор длительности (для пар, уроков, репетиций) -->
+        <div class="quick-duration-wrapper" id="quickDurationWrapper">
+          <span class="quick-dur-hint">Длительность:</span>
+          <div class="quick-duration-chips">
+            <button type="button" class="btn-quick-dur" data-mins="45">45 мин</button>
+            <button type="button" class="btn-quick-dur" data-mins="60">1 час</button>
+            <button type="button" class="btn-quick-dur" data-mins="80">1 ч 20 м (пара)</button>
+            <button type="button" class="btn-quick-dur" data-mins="90">1.5 часа</button>
+            <button type="button" class="btn-quick-dur btn-clear-dur" id="btnClearEndTime" title="Очистить окончание">✕</button>
           </div>
         </div>
 

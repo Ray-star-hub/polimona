@@ -68,6 +68,9 @@
   const taskCategoryOptions = document.getElementById('taskCategoryOptions');
   const taskDeadlineDate = document.getElementById('taskDeadlineDate');
   const taskDeadlineTime = document.getElementById('taskDeadlineTime');
+  const taskDeadlineEndTime = document.getElementById('taskDeadlineEndTime');
+  const taskDurationBadge = document.getElementById('taskDurationBadge');
+  const btnClearEndTime = document.getElementById('btnClearEndTime');
   const taskTypeInputs = document.querySelectorAll('input[name="taskType"]');
   const taskTypeNote = document.getElementById('taskTypeNote');
   const taskTitleLabel = document.getElementById('taskTitleLabel');
@@ -122,6 +125,20 @@
   const calSelectedDaySubheading = document.getElementById('calSelectedDaySubheading');
   const calDayHeaderAction = document.getElementById('calDayHeaderAction');
   const calendarDayDetailsContent = document.getElementById('calendarDayDetailsContent');
+
+  // Floating Day Popover (Минюшка дня)
+  const calendarPopoverBackdrop = document.getElementById('calendarPopoverBackdrop');
+  const calendarPopover = document.getElementById('calendarPopover');
+  const popoverBeak = document.getElementById('popoverBeak');
+  const popoverDateBadge = document.getElementById('popoverDateBadge');
+  const popoverDayNum = document.getElementById('popoverDayNum');
+  const popoverDayName = document.getElementById('popoverDayName');
+  const popoverDateHeading = document.getElementById('popoverDateHeading');
+  const popoverItemsCount = document.getElementById('popoverItemsCount');
+  const closePopoverBtn = document.getElementById('closePopoverBtn');
+  const popoverItemsList = document.getElementById('popoverItemsList');
+  const popoverAddTaskBtn = document.getElementById('popoverAddTaskBtn');
+  const popoverAddLessonBtn = document.getElementById('popoverAddLessonBtn');
 
   // Lesson Sheet & Form
   const lessonSheet = document.getElementById('lessonSheet');
@@ -206,6 +223,11 @@
 
     if (uiState.selectedCalendarDate) {
       calSelectedDate = uiState.selectedCalendarDate;
+      const parts = calSelectedDate.split('-');
+      if (parts.length === 3) {
+        calCurrentYear = parseInt(parts[0], 10);
+        calCurrentMonth = parseInt(parts[1], 10) - 1;
+      }
     } else {
       calSelectedDate = window.storageService.formatDateIso(today);
     }
@@ -252,6 +274,49 @@
   }
 
   // -------------------------------------------------------------
+  // Time & Duration Utilities
+  // -------------------------------------------------------------
+  function timeToMinutes(timeStr) {
+    if (!timeStr) return 0;
+    const parts = timeStr.split(':');
+    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+  }
+
+  function minutesToTime(mins) {
+    const totalMins = ((mins % (24 * 60)) + (24 * 60)) % (24 * 60);
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  function calculateDurationText(startTime, endTime) {
+    if (!startTime || !endTime) return '';
+    const s = timeToMinutes(startTime);
+    const e = timeToMinutes(endTime);
+    if (e <= s) return '';
+    const diff = e - s;
+    const h = Math.floor(diff / 60);
+    const m = diff % 60;
+    if (h > 0 && m > 0) return `${h} ч ${m} м`;
+    if (h > 0) return `${h} ч`;
+    return `${m} мин`;
+  }
+
+  function updateTaskDurationBadge() {
+    if (!taskDurationBadge) return;
+    const s = taskDeadlineTime ? taskDeadlineTime.value : '';
+    const e = taskDeadlineEndTime ? taskDeadlineEndTime.value : '';
+    const text = calculateDurationText(s, e);
+    if (text) {
+      taskDurationBadge.textContent = text;
+      taskDurationBadge.style.display = 'inline-flex';
+    } else {
+      taskDurationBadge.textContent = '';
+      taskDurationBadge.style.display = 'none';
+    }
+  }
+
+  // -------------------------------------------------------------
   // Deadline & Regular Tasks Evaluation
   // -------------------------------------------------------------
   function evaluateTaskDeadline(task) {
@@ -284,8 +349,14 @@
       }
 
       const timeStr = task.deadlineTime || '';
+      const endTimeStr = task.deadlineEndTime || '';
       const plannedObj = new Date(`${task.deadlineDate}T${timeStr || '12:00'}:00`);
-      const formatted = formatRegularDate(plannedObj, !!task.deadlineTime);
+      let formatted = formatRegularDate(plannedObj, !!task.deadlineTime);
+      if (timeStr && endTimeStr) {
+        const durText = calculateDurationText(timeStr, endTimeStr);
+        const rangeText = `${timeStr} – ${endTimeStr}${durText ? ` (${durText})` : ''}`;
+        formatted = formatted.replace(timeStr, rangeText);
+      }
 
       return {
         level: 4,
@@ -831,15 +902,30 @@
 
     // Attach click listener for each day cell
     calendarDaysGrid.querySelectorAll('.cal-day-cell').forEach(cell => {
-      cell.addEventListener('click', () => {
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
         if (window.soundEffects) window.soundEffects.playTap();
         const dateStr = cell.getAttribute('data-date');
         calSelectedDate = dateStr;
         uiState.selectedCalendarDate = dateStr;
         window.storageService.saveUIState({ selectedCalendarDate: dateStr });
-        renderDualCalendar();
+
+        calendarDaysGrid.querySelectorAll('.cal-day-cell').forEach(c => c.classList.remove('is-selected'));
+        cell.classList.add('is-selected');
+
+        renderCalendarDayDetails();
+        showCalendarPopover(dateStr, cell);
       });
     });
+  }
+
+  function getCalendarEventShortTitle(title) {
+    if (!title) return '';
+    let t = title.replace(/^Пара:\s*/i, '').replace(/^Урок:\s*/i, '').trim();
+    if (t.length > 9) {
+      return t.slice(0, 8) + '…';
+    }
+    return t;
   }
 
   function renderCalendarCell(dateStr, dayNum, isOtherMonth, todayStr) {
@@ -851,62 +937,258 @@
     if (isToday) cellClasses.push('is-today');
     if (isSelected) cellClasses.push('is-selected');
 
-    let contentHtml = '';
+    const dayTasks = tasks.filter(t => t.deadlineDate === dateStr);
+    const dayLessons = lessons.filter(l => l.date === dateStr);
+
+    let cellEvents = [];
+    let windowIndicatorHtml = '';
 
     if (uiState.calendarMode === 'teaching') {
       // Teaching Schedule: Free Windows (Green) vs Fully Busy (Grey)
-      const dayLessons = lessons.filter(l => l.date === dateStr);
       const scheduleStatus = evaluateTeachingDaySchedule(dayLessons, dateStr);
 
       if (scheduleStatus.status === 'free-windows') {
         cellClasses.push('day-free-windows');
-        contentHtml = `<span class="cal-window-indicator badge-green">${scheduleStatus.label}</span>`;
+        windowIndicatorHtml = `<span class="cal-window-indicator badge-green">${scheduleStatus.label}</span>`;
       } else if (scheduleStatus.status === 'busy') {
         cellClasses.push('day-busy');
-        contentHtml = `<span class="cal-window-indicator badge-grey">Занято</span>`;
+        windowIndicatorHtml = `<span class="cal-window-indicator badge-grey">Занято</span>`;
       }
-    } else {
-      // Tasks Calendar: Dots for tasks and deadlines
-      const dayTasks = tasks.filter(t => t.deadlineDate === dateStr);
-      if (dayTasks.length > 0) {
-        let hasBurning = false;
-        let hasOverdue = false;
-        let hasDeadline = false;
-        let hasRegular = false;
-        let hasCompleted = false;
 
-        dayTasks.forEach(t => {
-          const res = evaluateTaskDeadline(t);
-          if (t.completed) {
-            hasCompleted = true;
-          } else if (res.isDeadline) {
-            if (res.isBurning) hasBurning = true;
-            else if (res.isOverdue) hasOverdue = true;
-            else hasDeadline = true;
-          } else {
-            hasRegular = true;
-          }
+      // Show lessons as event rows in cell
+      dayLessons.forEach(l => {
+        cellEvents.push({
+          title: l.studentName,
+          dotCls: 'event-lesson',
+          time: l.startTime
         });
+      });
+    } else {
+      // All tasks & lessons
+      dayTasks.forEach(t => {
+        let dotCls = 'event-regular';
+        if (t.completed) dotCls = 'event-completed';
+        else if (t.isDeadline || t.taskType === 'deadline') dotCls = 'event-deadline';
 
-        let dotsHtml = '';
-        if (hasBurning) dotsHtml += '<span class="cal-dot dot-burning"></span>';
-        if (hasOverdue) dotsHtml += '<span class="cal-dot dot-overdue"></span>';
-        if (hasDeadline) dotsHtml += '<span class="cal-dot dot-deadline"></span>';
-        if (hasRegular) dotsHtml += '<span class="cal-dot dot-regular"></span>';
-        if (hasCompleted && !hasBurning && !hasOverdue && !hasDeadline && !hasRegular) {
-          dotsHtml += '<span class="cal-dot dot-completed"></span>';
-        }
+        cellEvents.push({
+          title: t.title,
+          dotCls,
+          time: t.deadlineTime || ''
+        });
+      });
 
-        contentHtml = `<div class="cal-day-dots">${dotsHtml}</div>`;
-      }
+      dayLessons.forEach(l => {
+        cellEvents.push({
+          title: l.studentName,
+          dotCls: 'event-lesson',
+          time: l.startTime
+        });
+      });
+    }
+
+    cellEvents.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+
+    let eventsHtml = '';
+    if (cellEvents.length > 0) {
+      const maxShown = 3;
+      const visible = cellEvents.slice(0, maxShown);
+      const overflow = cellEvents.length - maxShown;
+
+      eventsHtml = `
+        <div class="cal-day-events-list">
+          ${visible.map(e => `
+            <div class="cal-cell-event ${e.dotCls}" title="${escapeHtml(e.title)}">
+              <span class="event-dot"></span>
+              <span class="event-text">${escapeHtml(getCalendarEventShortTitle(e.title))}</span>
+            </div>
+          `).join('')}
+          ${overflow > 0 ? `<div class="cal-cell-event event-more">+${overflow}</div>` : ''}
+        </div>
+      `;
     }
 
     return `
       <div class="${cellClasses.join(' ')}" data-date="${dateStr}">
-        <span class="cal-day-number">${dayNum}</span>
-        ${contentHtml}
+        <div class="cal-day-header">
+          <span class="cal-day-number">${dayNum}</span>
+        </div>
+        ${windowIndicatorHtml}
+        ${eventsHtml}
       </div>
     `;
+  }
+
+  function showCalendarPopover(dateStr, cellEl) {
+    if (!calendarPopover || !cellEl) return;
+
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const dayNum = dateObj.getDate();
+    const dayNamesShort = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+    const dayNameShort = dayNamesShort[dateObj.getDay()];
+    const monthNamesGen = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    const dateFormatted = `${dayNum} ${monthNamesGen[dateObj.getMonth()]}`;
+
+    if (popoverDayNum) popoverDayNum.textContent = dayNum;
+    if (popoverDayName) popoverDayName.textContent = dayNameShort;
+    if (popoverDateHeading) popoverDateHeading.textContent = dateFormatted;
+
+    const dayTasks = tasks.filter(t => t.deadlineDate === dateStr);
+    const dayLessons = lessons.filter(l => l.date === dateStr);
+    const totalCount = dayTasks.length + dayLessons.length;
+
+    if (popoverItemsCount) {
+      if (totalCount === 0) {
+        popoverItemsCount.textContent = 'Нет записей';
+      } else {
+        popoverItemsCount.textContent = `${totalCount} ${getNounPlural(totalCount, 'событие', 'события', 'событий')}`;
+      }
+    }
+
+    let itemsHtml = '';
+    if (totalCount === 0) {
+      itemsHtml = `
+        <div class="popover-empty">
+          <div style="font-size: 26px; margin-bottom: 6px;">🎼</div>
+          <div>На этот день ничего не запланировано</div>
+        </div>
+      `;
+    } else {
+      const unified = [];
+      dayTasks.forEach(t => {
+        const evalRes = evaluateTaskDeadline(t);
+        let dotCls = 'dot-regular';
+        if (t.completed) dotCls = 'dot-completed';
+        else if (evalRes.isDeadline) dotCls = 'dot-deadline';
+
+        unified.push({
+          type: 'task',
+          id: t.id,
+          title: t.title,
+          time: t.deadlineTime || '',
+          endTime: t.deadlineEndTime || '',
+          dotCls,
+          isDone: t.completed,
+          notes: t.description || ''
+        });
+      });
+
+      dayLessons.forEach(l => {
+        unified.push({
+          type: 'lesson',
+          id: l.id,
+          title: l.studentName,
+          time: l.startTime,
+          endTime: l.endTime,
+          dotCls: 'dot-lesson',
+          isDone: false,
+          notes: (l.subject ? l.subject : '') + (l.notes ? ` • ${l.notes}` : '')
+        });
+      });
+
+      unified.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
+
+      itemsHtml = unified.map(item => {
+        let timeStr = '';
+        let durStr = '';
+        if (item.time) {
+          timeStr = item.time;
+          if (item.endTime) {
+            timeStr += ` - ${item.endTime}`;
+            durStr = calculateDurationText(item.time, item.endTime);
+          }
+        } else {
+          timeStr = 'Без времени';
+        }
+
+        let subLine = timeStr;
+        if (item.notes) {
+          subLine += ` • ${escapeHtml(item.notes)}`;
+        }
+
+        return `
+          <div class="popover-item ${item.isDone ? 'is-done' : ''}" data-popover-type="${item.type}" data-popover-id="${item.id}">
+            <div class="popover-item-left">
+              <span class="popover-item-dot ${item.dotCls}"></span>
+              <div class="popover-item-info">
+                <div class="popover-item-title">${escapeHtml(item.title)}</div>
+                <div class="popover-item-sub">${subLine}</div>
+              </div>
+            </div>
+            ${durStr ? `<div class="popover-item-dur">${durStr}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    if (popoverItemsList) {
+      popoverItemsList.innerHTML = itemsHtml;
+      popoverItemsList.querySelectorAll('.popover-item').forEach(itemEl => {
+        itemEl.addEventListener('click', () => {
+          const type = itemEl.getAttribute('data-popover-type');
+          const id = itemEl.getAttribute('data-popover-id');
+          hideCalendarPopover();
+          if (type === 'task') {
+            openEditTaskModal(id);
+          } else if (type === 'lesson') {
+            openEditLessonModal(id);
+          }
+        });
+      });
+    }
+
+    // Position Popover
+    const calendarCard = document.querySelector('.calendar-card');
+    if (!calendarCard) return;
+
+    calendarPopover.style.display = 'flex';
+    if (calendarPopoverBackdrop) calendarPopoverBackdrop.style.display = 'block';
+
+    const cardRect = calendarCard.getBoundingClientRect();
+    const cellRect = cellEl.getBoundingClientRect();
+
+    const cellCenterX = (cellRect.left + cellRect.width / 2) - cardRect.left;
+    const popoverWidth = Math.min(320, cardRect.width - 16);
+    calendarPopover.style.width = `${popoverWidth}px`;
+
+    let leftPos = cellCenterX - (popoverWidth / 2);
+    if (leftPos < 8) leftPos = 8;
+    if (leftPos + popoverWidth > cardRect.width - 8) {
+      leftPos = cardRect.width - popoverWidth - 8;
+    }
+    calendarPopover.style.left = `${leftPos}px`;
+
+    // Position beak
+    const beakOffset = cellCenterX - leftPos - 7;
+    const clampedBeakOffset = Math.max(16, Math.min(popoverWidth - 28, beakOffset));
+    if (popoverBeak) {
+      popoverBeak.style.left = `${clampedBeakOffset}px`;
+    }
+
+    // Vertical position
+    const popoverHeight = calendarPopover.offsetHeight || 230;
+    const cellTopInCard = cellRect.top - cardRect.top;
+    const cellBottomInCard = cellRect.bottom - cardRect.top;
+
+    if (cellTopInCard > popoverHeight + 15) {
+      // Above cell
+      const topPos = cellTopInCard - popoverHeight - 10;
+      calendarPopover.style.top = `${topPos}px`;
+      if (popoverBeak) popoverBeak.className = 'popover-beak beak-bottom';
+    } else {
+      // Below cell
+      const topPos = cellBottomInCard + 10;
+      calendarPopover.style.top = `${topPos}px`;
+      if (popoverBeak) popoverBeak.className = 'popover-beak beak-top';
+    }
+  }
+
+  function hideCalendarPopover() {
+    if (calendarPopover) calendarPopover.style.display = 'none';
+    if (calendarPopoverBackdrop) calendarPopoverBackdrop.style.display = 'none';
   }
 
   /**
@@ -970,18 +1252,6 @@
     }
 
     return { status: 'busy', label: 'Занято' };
-  }
-
-  function timeToMinutes(timeStr) {
-    if (!timeStr) return 0;
-    const parts = timeStr.split(':');
-    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-  }
-
-  function minutesToTime(mins) {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   }
 
   // -------------------------------------------------------------
@@ -1338,7 +1608,9 @@
     deleteTaskBtn.style.display = 'none';
 
     taskDeadlineDate.value = initialDate || '';
-    taskDeadlineTime.value = '13:30';
+    taskDeadlineTime.value = '11:40';
+    if (taskDeadlineEndTime) taskDeadlineEndTime.value = '';
+    updateTaskDurationBadge();
 
     const typeRadio = taskForm.querySelector(`input[name="taskType"][value="${defaultType}"]`);
     if (typeRadio) typeRadio.checked = true;
@@ -1366,7 +1638,12 @@
     taskTitleInput.value = task.title;
     taskDescInput.value = task.description || '';
     taskDeadlineDate.value = task.deadlineDate || '';
-    taskDeadlineTime.value = task.deadlineTime || (isDeadline ? '18:00' : '13:30');
+    taskDeadlineTime.value = task.deadlineTime || (isDeadline ? '18:00' : '11:40');
+    if (taskDeadlineEndTime) {
+      taskDeadlineEndTime.value = task.deadlineEndTime || '';
+    }
+    updateTaskDurationBadge();
+
     deleteTaskBtn.style.display = 'block';
 
     const typeRadio = taskForm.querySelector(`input[name="taskType"][value="${typeValue}"]`);
@@ -1409,7 +1686,8 @@
 
     const desc = taskDescInput.value.trim();
     const deadlineDate = taskDeadlineDate.value;
-    const deadlineTime = deadlineDate ? (taskDeadlineTime.value || (isDeadline ? '18:00' : '13:30')) : '';
+    const deadlineTime = deadlineDate ? (taskDeadlineTime.value || (isDeadline ? '18:00' : '11:40')) : '';
+    const deadlineEndTime = (deadlineDate && taskDeadlineEndTime) ? taskDeadlineEndTime.value.trim() : '';
     const prioChecked = taskForm.querySelector('input[name="priority"]:checked');
     const priority = prioChecked ? prioChecked.value : 'medium';
     const catChecked = taskForm.querySelector('input[name="taskCategory"]:checked');
@@ -1425,6 +1703,7 @@
         isDeadline,
         deadlineDate,
         deadlineTime,
+        deadlineEndTime,
         priority
       });
       showToast(isDeadline ? '✨ Дедлайн сохранен' : '✨ Задача сохранена');
@@ -1438,6 +1717,7 @@
         isDeadline,
         deadlineDate,
         deadlineTime,
+        deadlineEndTime,
         priority,
         completed: false,
         createdAt: new Date().toISOString()
@@ -1765,6 +2045,7 @@
     navItems.forEach(item => {
       item.addEventListener('click', () => {
         if (window.soundEffects) window.soundEffects.playTap();
+        hideCalendarPopover();
         const tabId = item.getAttribute('data-tab');
 
         navItems.forEach(i => i.classList.remove('active'));
@@ -1906,6 +2187,74 @@
           taskSheetTitle.textContent = input.value === 'deadline' ? 'Новый дедлайн' : 'Новая задача';
         }
       });
+    });
+
+    // Task Duration & Time Listeners
+    if (taskDeadlineTime) {
+      taskDeadlineTime.addEventListener('input', updateTaskDurationBadge);
+      taskDeadlineTime.addEventListener('change', updateTaskDurationBadge);
+    }
+    if (taskDeadlineEndTime) {
+      taskDeadlineEndTime.addEventListener('input', updateTaskDurationBadge);
+      taskDeadlineEndTime.addEventListener('change', updateTaskDurationBadge);
+    }
+
+    // Quick Duration Chips (+45 мин, +1 час, +1 ч 20 м (пара), +1.5 часа)
+    document.querySelectorAll('.btn-quick-dur[data-mins]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        const mins = parseInt(btn.getAttribute('data-mins'), 10);
+        let start = taskDeadlineTime.value || '11:40';
+        taskDeadlineTime.value = start;
+        const sMin = timeToMinutes(start);
+        const eMin = (sMin + mins) % (24 * 60);
+        if (taskDeadlineEndTime) {
+          taskDeadlineEndTime.value = minutesToTime(eMin);
+        }
+        updateTaskDurationBadge();
+      });
+    });
+
+    if (btnClearEndTime) {
+      btnClearEndTime.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        if (taskDeadlineEndTime) taskDeadlineEndTime.value = '';
+        updateTaskDurationBadge();
+      });
+    }
+
+    // Floating Calendar Popover Controls
+    if (popoverAddTaskBtn) {
+      popoverAddTaskBtn.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        hideCalendarPopover();
+        openAddTaskModalWithDate(calSelectedDate || window.storageService.formatDateIso(new Date()));
+      });
+    }
+
+    if (popoverAddLessonBtn) {
+      popoverAddLessonBtn.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        hideCalendarPopover();
+        openAddLessonModal(calSelectedDate || window.storageService.formatDateIso(new Date()));
+      });
+    }
+
+    if (closePopoverBtn) {
+      closePopoverBtn.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        hideCalendarPopover();
+      });
+    }
+
+    if (calendarPopoverBackdrop) {
+      calendarPopoverBackdrop.addEventListener('click', hideCalendarPopover);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideCalendarPopover();
+      }
     });
 
     // Category Sheet Events

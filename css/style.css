@@ -978,6 +978,62 @@ html, body {
   gap: 12px;
 }
 
+/* Quick Duration Chips in Task Form */
+.quick-duration-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 0 2px;
+}
+
+.quick-dur-hint {
+  font-size: 11.5px;
+  color: var(--espresso-500);
+  font-weight: 500;
+}
+
+.quick-duration-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-quick-dur {
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-color);
+  background: var(--espresso-50);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--espresso-700);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-quick-dur:active {
+  transform: scale(0.92);
+  background: var(--butter-200);
+  border-color: var(--butter-500);
+}
+
+.btn-quick-dur.btn-clear-dur {
+  padding: 4px 8px;
+  color: var(--burn-text);
+  background: var(--burn-bg);
+  border-color: var(--burn-border);
+}
+
+.duration-computed-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--espresso-700);
+  background: var(--butter-200);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+}
+
 /* Priority Segmented Control */
 .priority-selector {
   display: grid;
@@ -1742,6 +1798,7 @@ input:checked + .slider::before {
   border-radius: var(--radius-lg);
   padding: 14px 12px 10px;
   box-shadow: var(--shadow-sm);
+  position: relative; /* Anchor for floating popover */
 }
 
 .calendar-weekdays {
@@ -1759,93 +1816,404 @@ input:checked + .slider::before {
 .calendar-days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  gap: 3px;
 }
 
-/* Individual Day Cell */
+/* Individual Day Cell (Screenshot 1: Text written in cells) */
 .cal-day-cell {
-  min-height: 48px;
+  min-height: 74px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
-  padding-top: 5px;
+  padding: 3px 2px;
   position: relative;
-  border-radius: 12px;
+  border-radius: 9px;
   cursor: pointer;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(235, 221, 203, 0.5);
   transition: all 0.15s ease;
   user-select: none;
+  overflow: hidden;
 }
 
 .cal-day-cell:active {
-  transform: scale(0.94);
+  transform: scale(0.96);
+}
+
+.cal-day-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2px;
+  height: 20px;
 }
 
 .cal-day-number {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--espresso-800);
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
 
 .cal-day-cell.other-month {
-  opacity: 0.28;
+  opacity: 0.3;
+  background: rgba(247, 242, 231, 0.3);
 }
 
 .cal-day-cell.is-today .cal-day-number {
   color: var(--espresso-900);
-  position: relative;
+  font-weight: 800;
+  background: var(--butter-300);
+  border: 1px solid var(--butter-500);
 }
-.cal-day-cell.is-today::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  right: 6px;
-  width: 5px;
-  height: 5px;
+
+/* Selection Ring / Oval around number as on photo */
+.cal-day-cell.is-selected {
+  border-color: var(--espresso-900);
+  background: #FFFFFF;
+}
+
+.cal-day-cell.is-selected .cal-day-number {
+  background: var(--espresso-900);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+/* Events list inside cell (Screenshot 1) */
+.cal-day-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cal-cell-event {
+  display: flex;
+  align-items: center;
+  gap: 2.5px;
+  padding: 1px 2px;
+  border-radius: 3px;
+  font-size: 9.5px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--espresso-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.cal-cell-event .event-dot {
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cal-cell-event.event-deadline .event-dot {
+  background: var(--burn-text);
+  box-shadow: 0 0 3px rgba(206, 54, 41, 0.45);
+}
+
+.cal-cell-event.event-regular .event-dot {
   background: var(--butter-600);
 }
 
-/* Selection Ring */
-.cal-day-cell.is-selected {
-  outline: 2px solid var(--espresso-900);
-  outline-offset: -1px;
+.cal-cell-event.event-lesson .event-dot {
+  background: #2E7D32;
 }
 
-/* Mode 1: Tasks Calendar Dots */
-.cal-day-dots {
+.cal-cell-event.event-completed .event-dot {
+  background: #757575;
+}
+
+.cal-cell-event.event-completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.cal-cell-event.event-more {
+  font-size: 8.5px;
+  color: var(--espresso-400);
+  padding-left: 4px;
+  font-weight: 700;
+}
+
+/* Floating Day Popover (Screenshot 2: Минюшка при клике на число) */
+.calendar-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(36, 23, 14, 0.2);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.calendar-popover {
+  position: absolute;
+  z-index: 75;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+  background: #FFFDF9;
+  border-radius: 20px;
+  box-shadow: 0 16px 44px rgba(36, 23, 14, 0.24), 0 2px 8px rgba(36, 23, 14, 0.08);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  animation: popoverFadeIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.popover-beak {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: #FFFDF9;
+  transform: rotate(45deg);
+  border: 1px solid var(--border-color);
+  z-index: 1;
+}
+
+.popover-beak.beak-bottom {
+  bottom: -8px;
+  border-top: none;
+  border-left: none;
+}
+
+.popover-beak.beak-top {
+  top: -8px;
+  border-bottom: none;
+  border-right: none;
+}
+
+.popover-top-bar {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(235, 221, 203, 0.6);
+  gap: 10px;
+}
+
+.popover-date-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--butter-100);
+  border: 1px solid var(--butter-400);
+  line-height: 1.1;
+  flex-shrink: 0;
+}
+
+.popover-date-badge #popoverDayNum {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--espresso-900);
+}
+
+.popover-date-badge #popoverDayName {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--espresso-500);
+  font-weight: 600;
+}
+
+.popover-title-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.popover-heading {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--espresso-900);
+  line-height: 1.2;
+}
+
+.popover-subheading {
+  font-size: 11.5px;
+  color: var(--espresso-500);
+}
+
+.popover-close-btn {
+  background: rgba(235, 221, 203, 0.5);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2.5px;
-  margin-top: 5px;
-  height: 6px;
+  color: var(--espresso-700);
+  font-size: 15px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.popover-close-btn:active {
+  background: rgba(235, 221, 203, 0.9);
 }
 
-.cal-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+.popover-items-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
-.cal-dot.dot-burning {
+
+.popover-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(235, 221, 203, 0.5);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  gap: 8px;
+}
+
+.popover-item:last-child {
+  border-bottom: none;
+}
+
+.popover-item:active {
+  background: var(--espresso-50);
+}
+
+.popover-item-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.popover-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.popover-item-dot.dot-deadline {
   background: var(--burn-text);
   box-shadow: 0 0 4px rgba(206, 54, 41, 0.4);
 }
-.cal-dot.dot-overdue {
-  background: var(--overdue-text);
-}
-.cal-dot.dot-normal {
-  background: var(--butter-500);
-}
-.cal-dot.dot-deadline {
-  background: #E67E22;
-}
-.cal-dot.dot-regular {
+
+.popover-item-dot.dot-regular {
   background: var(--butter-600);
 }
-.cal-dot.dot-completed {
-  background: var(--success-text);
+
+.popover-item-dot.dot-lesson {
+  background: #2E7D32;
+}
+
+.popover-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.popover-item-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--espresso-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.popover-item.is-done .popover-item-title {
+  text-decoration: line-through;
+  color: var(--espresso-400);
+}
+
+.popover-item-sub {
+  font-size: 12px;
+  color: var(--espresso-600);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popover-item-dur {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--espresso-500);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.popover-empty {
+  padding: 22px 14px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--espresso-500);
+}
+
+.popover-footer-actions {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+  background: rgba(250, 246, 240, 0.65);
+  border-radius: 0 0 20px 20px;
+}
+
+.popover-act-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  background: transparent;
+  color: var(--espresso-800);
+  font-size: 13.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.popover-act-btn:active {
+  background: var(--butter-100);
+}
+
+.popover-act-btn .act-icon {
+  font-size: 16px;
+  color: var(--butter-600);
+}
+
+.popover-act-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
 }
 
 /* Mode 2: Teaching Schedule Indicators (Зеленые окна / Серые занятые дни) */
