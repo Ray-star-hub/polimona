@@ -3,7 +3,7 @@
  * Robust offline PWA support for iPhone Safari and GitHub Pages
  */
 
-const CACHE_NAME = 'polimona-music-todo-v6';
+const CACHE_NAME = 'polimona-music-todo-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -20,10 +20,11 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -41,52 +42,27 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Network-First for ALL requests so updates appear immediately without caching lag
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
-  // 1. For HTML document navigation: Network-First (with cache fallback) so updates show immediately
-  if (event.request.mode === 'navigate' || event.request.destination === 'document') {
-    event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          return caches.match(event.request).then((cached) => {
-            return cached || caches.match('./index.html') || caches.match('./');
-          });
-        })
-    );
-    return;
-  }
-
-  // 2. For other assets (CSS, JS, icons): Cache-First with background revalidation
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, networkResponse.clone());
-            });
-          }
-        }).catch(() => {});
-        return cachedResponse;
-      }
-
-      return fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return networkResponse;
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+            return caches.match('./index.html') || caches.match('./');
+          }
+          return null;
+        });
+      })
   );
 });

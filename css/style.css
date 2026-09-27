@@ -978,6 +978,10 @@ html, body {
   gap: 12px;
 }
 
+.form-row-2.single-col {
+  grid-template-columns: 1fr;
+}
+
 /* Quick Duration Chips in Task Form */
 .quick-duration-wrapper {
   display: flex;

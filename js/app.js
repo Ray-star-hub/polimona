@@ -1580,22 +1580,34 @@
   }
 
   function updateTaskTypeFormUI(type) {
+    const taskEndTimeGroup = document.getElementById('taskEndTimeGroup');
+    const taskTimeRow = document.getElementById('taskTimeRow');
+    const quickDur = document.getElementById('quickDurationWrapper');
+
     if (type === 'deadline') {
       if (taskTypeNote) {
         taskTypeNote.textContent = 'Для сдачи нот, курсовых, заявок на конкурсы (предупредит за 24 ч)';
       }
       if (taskTitleLabel) taskTitleLabel.textContent = 'Название дедлайна';
-      if (taskDateLabel) taskDateLabel.textContent = '🔥 Срок сдачи (дедлайн)';
-      if (taskTimeLabel) taskTimeLabel.textContent = '⏰ Время сдачи';
+      if (taskDateLabel) taskDateLabel.textContent = '🔥 Дедлайн';
+      if (taskTimeLabel) taskTimeLabel.textContent = '⏰ Время';
       if (taskTitleInput) taskTitleInput.placeholder = 'Например: Сдать нотную партитуру для квартета';
+
+      if (taskEndTimeGroup) taskEndTimeGroup.style.display = 'none';
+      if (taskTimeRow) taskTimeRow.classList.add('single-col');
+      if (quickDur) quickDur.style.display = 'none';
     } else {
       if (taskTypeNote) {
         taskTypeNote.textContent = 'Для пар, уроков, репетиций и списков дел — не горит красным';
       }
       if (taskTitleLabel) taskTitleLabel.textContent = 'Название задачи';
-      if (taskDateLabel) taskDateLabel.textContent = '📅 Запланировано на';
-      if (taskTimeLabel) taskTimeLabel.textContent = '⏰ Время';
+      if (taskDateLabel) taskDateLabel.textContent = '📅 Дата';
+      if (taskTimeLabel) taskTimeLabel.textContent = '⏰ Время с';
       if (taskTitleInput) taskTitleInput.placeholder = 'Например: Сходить на пару по полифонии';
+
+      if (taskEndTimeGroup) taskEndTimeGroup.style.display = 'flex';
+      if (taskTimeRow) taskTimeRow.classList.remove('single-col');
+      if (quickDur) quickDur.style.display = 'flex';
     }
   }
 
@@ -2346,6 +2358,25 @@
         showToast('🔄 Данные сброшены к начальным');
       }
     });
+
+    // Force Update & Clear Cache
+    const btnForceUpdateApp = document.getElementById('btnForceUpdateApp');
+    if (btnForceUpdateApp) {
+      btnForceUpdateApp.addEventListener('click', async () => {
+        showToast('⚡ Обновление кэша...');
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let r of registrations) {
+            await r.unregister();
+          }
+        }
+        window.location.reload(true);
+      });
+    }
   }
 
   function escapeHtml(text) {
