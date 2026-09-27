@@ -24,7 +24,7 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=2.2">
+  <link rel="stylesheet" href="css/style.css?v=2.5">
 </head>
 <body>
 
@@ -102,103 +102,130 @@
       </div>
     </main>
 
-    <!-- TAB 2: Dual Calendar Screen (Двойной календарь) -->
+    <!-- TAB 2: Calendar Screen (Блочный недельный / День / Месяц) -->
     <section class="tab-content" id="tab-calendar">
-      <!-- Dual Calendar Mode Switcher -->
-      <div class="calendar-switch-container">
-        <div class="calendar-segmented-control" role="tablist">
-          <button class="cal-segment-btn active" id="btnCalModeTasks" role="tab" aria-selected="true">
-            <span>🎼 Все задачи</span>
-          </button>
-          <button class="cal-segment-btn" id="btnCalModeTeaching" role="tab" aria-selected="false">
-            <span>🎹 Мои уроки и окна</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Month Navigation Bar -->
-      <div class="calendar-month-nav">
-        <button class="btn-cal-nav" id="btnCalPrevMonth" aria-label="Предыдущий месяц">‹</button>
-        <div class="cal-month-title-box">
-          <span class="cal-month-title" id="calMonthTitle">Сентябрь 2026</span>
-          <button class="btn-cal-today" id="btnCalToday">Сегодня</button>
-        </div>
-        <button class="btn-cal-nav" id="btnCalNextMonth" aria-label="Следующий месяц">›</button>
-      </div>
-
-      <!-- Calendar Month Grid Card -->
-      <div class="calendar-card">
-        <!-- Weekday Headers -->
-        <div class="calendar-weekdays">
-          <span>Пн</span>
-          <span>Вт</span>
-          <span>Ср</span>
-          <span>Чт</span>
-          <span>Пт</span>
-          <span>Сб</span>
-          <span>Вс</span>
-        </div>
-
-        <!-- Days Grid -->
-        <div class="calendar-days-grid" id="calendarDaysGrid">
-          <!-- Rendered by JS -->
-        </div>
-
-        <!-- Dynamic Legend Bar -->
-        <div class="calendar-legend-bar" id="calendarLegendBar">
-          <!-- Populated by JS based on Mode -->
-        </div>
-
-        <!-- Floating Day Popover Card (Мини-меню как на фото) -->
-        <div class="calendar-popover-backdrop" id="calendarPopoverBackdrop" style="display: none;"></div>
-        <div class="calendar-popover" id="calendarPopover" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="popoverDateHeading">
-          <div class="popover-beak" id="popoverBeak"></div>
-          
-          <div class="popover-top-bar">
-            <div class="popover-date-badge" id="popoverDateBadge">
-              <span id="popoverDayNum">28</span>
-              <span id="popoverDayName">пн</span>
-            </div>
-            <div class="popover-title-info">
-              <div class="popover-heading" id="popoverDateHeading">28 сентября</div>
-              <div class="popover-subheading" id="popoverItemsCount">3 события</div>
-            </div>
-            <button type="button" class="popover-close-btn" id="closePopoverBtn" aria-label="Закрыть">✕</button>
+      <!-- Calendar Top Bar: View Mode Switcher (День / Неделя / Месяц) as in screenshot -->
+      <div class="calendar-top-bar">
+        <div class="cal-controls-row">
+          <!-- Segmented View Switcher (Day / Week / Month) -->
+          <div class="cal-view-segmented" role="tablist">
+            <button type="button" class="cal-view-btn" id="btnCalViewDay" data-view="day">День</button>
+            <button type="button" class="cal-view-btn active" id="btnCalViewWeek" data-view="week">Неделя</button>
+            <button type="button" class="cal-view-btn" id="btnCalViewMonth" data-view="month">Месяц</button>
           </div>
 
-          <div class="popover-items-list" id="popoverItemsList">
+          <!-- Filter Switcher (Все / Уроки) -->
+          <div class="cal-filter-capsules">
+            <button type="button" class="cal-filter-pill active" id="btnCalFilterAll" title="Все задачи и уроки">Все</button>
+            <button type="button" class="cal-filter-pill" id="btnCalFilterLessons" title="Только уроки">🎹 Уроки</button>
+          </div>
+        </div>
+
+        <!-- Period Navigation Bar -->
+        <div class="calendar-period-nav">
+          <button type="button" class="btn-cal-nav" id="btnCalPrev" aria-label="Предыдущий период">‹</button>
+          <div class="cal-month-title-box">
+            <span class="cal-month-title" id="calNavTitle">Октябрь 2026</span>
+            <button type="button" class="btn-cal-today btn-today-red" id="btnCalToday">Сегодня</button>
+          </div>
+          <button type="button" class="btn-cal-nav" id="btnCalNext" aria-label="Следующий период">›</button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: Block-based Week Timeline View (Блочный недельный календарь как на фото) -->
+      <div class="calendar-week-view" id="calendarWeekView">
+        <div class="timeline-block-card">
+          <div id="timelineWeekContainer" class="timeline-grid-wrapper">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: Single Day Timeline View (Вид на 1 день) -->
+      <div class="calendar-day-view" id="calendarDayView" style="display: none;">
+        <div class="timeline-block-card">
+          <div id="timelineDayContainer" class="timeline-day-wrapper">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: Month Grid View (Сетка месяца) -->
+      <div class="calendar-month-view" id="calendarMonthView" style="display: none;">
+        <!-- Calendar Month Grid Card -->
+        <div class="calendar-card">
+          <!-- Weekday Headers -->
+          <div class="calendar-weekdays">
+            <span>Пн</span>
+            <span>Вт</span>
+            <span>Ср</span>
+            <span>Чт</span>
+            <span>Пт</span>
+            <span>Сб</span>
+            <span>Вс</span>
+          </div>
+
+          <!-- Days Grid -->
+          <div class="calendar-days-grid" id="calendarDaysGrid">
             <!-- Rendered by JS -->
           </div>
 
-          <div class="popover-footer-actions">
-            <button type="button" class="popover-act-btn" id="popoverAddTaskBtn">
-              <span class="act-icon">＋</span>
-              <span>Задача</span>
-            </button>
-            <div class="popover-act-divider"></div>
-            <button type="button" class="popover-act-btn" id="popoverAddLessonBtn">
-              <span class="act-icon">＋</span>
-              <span>Урок</span>
-            </button>
+          <!-- Dynamic Legend Bar -->
+          <div class="calendar-legend-bar" id="calendarLegendBar">
+            <!-- Populated by JS based on Mode -->
+          </div>
+        </div>
+
+        <!-- Day Details Section (Tasks or Teaching Schedule) -->
+        <div class="calendar-day-details-section">
+          <div class="cal-day-header-row">
+            <div>
+              <h3 class="cal-day-heading" id="calSelectedDayHeading">28 сентября</h3>
+              <div class="cal-day-subheading" id="calSelectedDaySubheading">Понедельник</div>
+            </div>
+            <div id="calDayHeaderAction">
+              <!-- Dynamic button -->
+            </div>
+          </div>
+
+          <!-- Container for Day Tasks or Timeline -->
+          <div id="calendarDayDetailsContent">
+            <!-- Rendered by JS -->
           </div>
         </div>
       </div>
 
-      <!-- Day Details Section (Tasks or Teaching Schedule) -->
-      <div class="calendar-day-details-section">
-        <div class="cal-day-header-row">
-          <div>
-            <h3 class="cal-day-heading" id="calSelectedDayHeading">28 сентября</h3>
-            <div class="cal-day-subheading" id="calSelectedDaySubheading">Понедельник</div>
+      <!-- Floating Day Popover Card (Мини-меню доступно для недели, дня и месяца) -->
+      <div class="calendar-popover-backdrop" id="calendarPopoverBackdrop" style="display: none;"></div>
+      <div class="calendar-popover" id="calendarPopover" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="popoverDateHeading">
+        <div class="popover-beak" id="popoverBeak"></div>
+        
+        <div class="popover-top-bar">
+          <div class="popover-date-badge" id="popoverDateBadge">
+            <span id="popoverDayNum">28</span>
+            <span id="popoverDayName">пн</span>
           </div>
-          <div id="calDayHeaderAction">
-            <!-- Dynamic button -->
+          <div class="popover-title-info">
+            <div class="popover-heading" id="popoverDateHeading">28 сентября</div>
+            <div class="popover-subheading" id="popoverItemsCount">3 события</div>
           </div>
+          <button type="button" class="popover-close-btn" id="closePopoverBtn" aria-label="Закрыть">✕</button>
         </div>
 
-        <!-- Container for Day Tasks or Timeline -->
-        <div id="calendarDayDetailsContent">
+        <div class="popover-items-list" id="popoverItemsList">
           <!-- Rendered by JS -->
+        </div>
+
+        <div class="popover-footer-actions">
+          <button type="button" class="popover-act-btn" id="popoverAddTaskBtn">
+            <span class="act-icon">＋</span>
+            <span>Задача</span>
+          </button>
+          <div class="popover-act-divider"></div>
+          <button type="button" class="popover-act-btn" id="popoverAddLessonBtn">
+            <span class="act-icon">＋</span>
+            <span>Урок</span>
+          </button>
         </div>
       </div>
     </section>
@@ -700,15 +727,15 @@
   </div>
 
   <!-- Scripts with cache busting query params -->
-  <script src="js/storage.js?v=2.2"></script>
-  <script src="js/audio.js?v=2.2"></script>
-  <script src="js/app.js?v=2.2"></script>
+  <script src="js/storage.js?v=2.5"></script>
+  <script src="js/audio.js?v=2.5"></script>
+  <script src="js/app.js?v=2.5"></script>
 
   <!-- Service Worker Registration with Automatic Update & Claim Reload -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=2.2')
+        navigator.serviceWorker.register('./sw.js?v=2.5')
           .then((reg) => {
             console.log('Polimona ServiceWorker registered:', reg.scope);
             reg.update();

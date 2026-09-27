@@ -24,6 +24,9 @@
   let searchQuery = '';
 
   // Calendar State
+  let calViewMode = 'week';       // 'day' | 'week' | 'month'
+  let calFilterMode = 'all';      // 'all' | 'lessons'
+  let currentWeekMonday = null;   // Date object of Monday of displayed week
   let calCurrentYear = new Date().getFullYear();
   let calCurrentMonth = new Date().getMonth(); // 0-11
   let calSelectedDate = null; // 'YYYY-MM-DD'
@@ -112,13 +115,25 @@
   const cancelDeleteCatBtn = document.getElementById('cancelDeleteCatBtn');
   const closeDeleteCatSheetBtn = document.getElementById('closeDeleteCatSheetBtn');
 
-  // Dual Calendar Elements
-  const btnCalModeTasks = document.getElementById('btnCalModeTasks');
-  const btnCalModeTeaching = document.getElementById('btnCalModeTeaching');
-  const btnCalPrevMonth = document.getElementById('btnCalPrevMonth');
-  const btnCalNextMonth = document.getElementById('btnCalNextMonth');
+  // Calendar Top Bar & Controls
+  const btnCalViewDay = document.getElementById('btnCalViewDay');
+  const btnCalViewWeek = document.getElementById('btnCalViewWeek');
+  const btnCalViewMonth = document.getElementById('btnCalViewMonth');
+  const btnCalFilterAll = document.getElementById('btnCalFilterAll');
+  const btnCalFilterLessons = document.getElementById('btnCalFilterLessons');
+  const btnCalPrev = document.getElementById('btnCalPrev') || document.getElementById('btnCalPrevMonth');
+  const btnCalNext = document.getElementById('btnCalNext') || document.getElementById('btnCalNextMonth');
   const btnCalToday = document.getElementById('btnCalToday');
-  const calMonthTitle = document.getElementById('calMonthTitle');
+  const calNavTitle = document.getElementById('calNavTitle') || document.getElementById('calMonthTitle');
+
+  // Calendar Views
+  const calendarWeekView = document.getElementById('calendarWeekView');
+  const calendarDayView = document.getElementById('calendarDayView');
+  const calendarMonthView = document.getElementById('calendarMonthView');
+  const timelineWeekContainer = document.getElementById('timelineWeekContainer');
+  const timelineDayContainer = document.getElementById('timelineDayContainer');
+
+  // Month View Elements
   const calendarDaysGrid = document.getElementById('calendarDaysGrid');
   const calendarLegendBar = document.getElementById('calendarLegendBar');
   const calSelectedDayHeading = document.getElementById('calSelectedDayHeading');
@@ -216,10 +231,20 @@
     }
   }
 
+  function getMonday(d) {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    const mon = new Date(date.setDate(diff));
+    mon.setHours(0, 0, 0, 0);
+    return mon;
+  }
+
   function initCalendarState() {
     const today = new Date();
     calCurrentYear = today.getFullYear();
     calCurrentMonth = today.getMonth();
+    currentWeekMonday = getMonday(today);
 
     if (uiState.selectedCalendarDate) {
       calSelectedDate = uiState.selectedCalendarDate;
@@ -263,14 +288,13 @@
       }
     });
 
-    // Calendar mode
-    if (uiState.calendarMode === 'teaching') {
-      btnCalModeTeaching.classList.add('active');
-      btnCalModeTasks.classList.remove('active');
-    } else {
-      btnCalModeTasks.classList.add('active');
-      btnCalModeTeaching.classList.remove('active');
-    }
+    // Calendar mode & view
+    if (btnCalViewDay) btnCalViewDay.classList.toggle('active', calViewMode === 'day');
+    if (btnCalViewWeek) btnCalViewWeek.classList.toggle('active', calViewMode === 'week');
+    if (btnCalViewMonth) btnCalViewMonth.classList.toggle('active', calViewMode === 'month');
+
+    if (btnCalFilterAll) btnCalFilterAll.classList.toggle('active', calFilterMode === 'all');
+    if (btnCalFilterLessons) btnCalFilterLessons.classList.toggle('active', calFilterMode === 'lessons');
   }
 
   // -------------------------------------------------------------
@@ -804,19 +828,442 @@
   // Mode 1: Tasks by Categories
   // Mode 2: Teaching Lessons & Free Windows (Green = free windows, Grey = busy days)
   // -------------------------------------------------------------
+  // -------------------------------------------------------------
+  // DUAL / BLOCK TIMELINE CALENDAR SYSTEM
+  // Supports: Week Block Timetable, Day View, and Month Grid
+  // Filter: All (Tasks + Lessons + Pairs) or Lessons only
+  // -------------------------------------------------------------
   function renderDualCalendar() {
-    renderCalendarMonthTitle();
-    renderCalendarGrid();
-    renderCalendarLegend();
-    renderCalendarDayDetails();
+    renderCalendarPeriodTitle();
+
+    if (calendarWeekView) calendarWeekView.style.display = (calViewMode === 'week' ? 'block' : 'none');
+    if (calendarDayView) calendarDayView.style.display = (calViewMode === 'day' ? 'block' : 'none');
+    if (calendarMonthView) calendarMonthView.style.display = (calViewMode === 'month' ? 'block' : 'none');
+
+    if (btnCalViewDay) btnCalViewDay.classList.toggle('active', calViewMode === 'day');
+    if (btnCalViewWeek) btnCalViewWeek.classList.toggle('active', calViewMode === 'week');
+    if (btnCalViewMonth) btnCalViewMonth.classList.toggle('active', calViewMode === 'month');
+
+    if (btnCalFilterAll) btnCalFilterAll.classList.toggle('active', calFilterMode === 'all');
+    if (btnCalFilterLessons) btnCalFilterLessons.classList.toggle('active', calFilterMode === 'lessons');
+
+    if (calViewMode === 'week') {
+      renderCalendarWeekTimeline();
+    } else if (calViewMode === 'day') {
+      renderCalendarDayTimeline();
+    } else if (calViewMode === 'month') {
+      renderCalendarMonthTitle();
+      renderCalendarGrid();
+      renderCalendarLegend();
+      renderCalendarDayDetails();
+    }
   }
 
-  function renderCalendarMonthTitle() {
+  function renderCalendarPeriodTitle() {
+    if (!calNavTitle) return;
     const monthNames = [
       'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
       'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
     ];
-    calMonthTitle.textContent = `${monthNames[calCurrentMonth]} ${calCurrentYear}`;
+    const shortMonthNames = [
+      'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
+      'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'
+    ];
+    const genitiveMonthNames = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+
+    if (calViewMode === 'week') {
+      if (!currentWeekMonday) currentWeekMonday = getMonday(new Date());
+      const mon = new Date(currentWeekMonday);
+      const sun = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+
+      if (mon.getMonth() === sun.getMonth()) {
+        calNavTitle.textContent = `${monthNames[mon.getMonth()]} ${mon.getFullYear()}`;
+      } else {
+        calNavTitle.textContent = `${shortMonthNames[mon.getMonth()]} — ${shortMonthNames[sun.getMonth()]} ${sun.getFullYear()}`;
+      }
+    } else if (calViewMode === 'day') {
+      const sel = calSelectedDate ? new Date(calSelectedDate + 'T00:00:00') : new Date();
+      calNavTitle.textContent = `${sel.getDate()} ${genitiveMonthNames[sel.getMonth()]} ${sel.getFullYear()}`;
+    } else {
+      calNavTitle.textContent = `${monthNames[calCurrentMonth]} ${calCurrentYear}`;
+    }
+  }
+
+  function renderCalendarMonthTitle() {
+    renderCalendarPeriodTitle();
+  }
+
+  function getTimelineDayEvents(dateStr) {
+    const events = [];
+
+    // 1. Lessons
+    lessons.forEach(l => {
+      if (l.date === dateStr) {
+        events.push({
+          id: l.id,
+          type: 'lesson',
+          title: l.studentName || 'Урок',
+          subTitle: l.subject || '',
+          notes: l.notes || '',
+          startTime: l.startTime || '12:00',
+          endTime: l.endTime || '13:00',
+          completed: l.status === 'completed',
+          categoryClass: 'block-lesson',
+          raw: l
+        });
+      }
+    });
+
+    // 2. Tasks (if filter mode is 'all')
+    if (calFilterMode === 'all') {
+      tasks.forEach(t => {
+        if (t.deadlineDate === dateStr) {
+          let typeClass = 'block-regular';
+          if (t.taskType === 'deadline' || t.isDeadline) {
+            typeClass = 'block-deadline';
+          } else if (t.categoryId === 'cat-study' || (t.title && t.title.toLowerCase().includes('пара'))) {
+            typeClass = 'block-pair';
+          }
+          if (t.completed) {
+            typeClass += ' block-completed';
+          }
+
+          const startTime = t.deadlineTime || '09:00';
+          let endTime = t.deadlineEndTime;
+          if (!endTime) {
+            const [sh, sm] = startTime.split(':').map(Number);
+            const endMin = (sh * 60 + (sm || 0) + 45);
+            const eh = Math.floor(endMin / 60) % 24;
+            const em = endMin % 60;
+            endTime = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+          }
+
+          events.push({
+            id: t.id,
+            type: 'task',
+            title: t.title,
+            subTitle: t.description || '',
+            startTime: startTime,
+            endTime: endTime,
+            completed: !!t.completed,
+            categoryClass: typeClass,
+            raw: t
+          });
+        }
+      });
+    }
+
+    // Parse start and end minutes
+    events.forEach(ev => {
+      const [sh, sm] = (ev.startTime || '09:00').split(':').map(Number);
+      const [eh, em] = (ev.endTime || `${sh + 1}:${sm || 0}`).split(':').map(Number);
+      ev.startMinutes = (sh || 0) * 60 + (sm || 0);
+      ev.endMinutes = (eh || 0) * 60 + (em || 0);
+      if (ev.endMinutes <= ev.startMinutes) {
+        ev.endMinutes = ev.startMinutes + 45;
+      }
+    });
+
+    events.sort((a, b) => a.startMinutes - b.startMinutes);
+
+    // Overlap subcolumns (sub-col-left / sub-col-right)
+    for (let i = 0; i < events.length; i++) {
+      const cur = events[i];
+      for (let j = i + 1; j < events.length; j++) {
+        const next = events[j];
+        if (next.startMinutes < cur.endMinutes) {
+          cur.subCol = 'sub-col-left';
+          next.subCol = 'sub-col-right';
+        }
+      }
+    }
+
+    return events;
+  }
+
+  function renderCalendarWeekTimeline() {
+    if (!timelineWeekContainer) return;
+    if (!currentWeekMonday) currentWeekMonday = getMonday(new Date());
+
+    const todayStr = window.storageService.formatDateIso(new Date());
+    const now = new Date();
+    const dayNames = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
+
+    const weekDays = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(currentWeekMonday);
+      d.setDate(currentWeekMonday.getDate() + i);
+      const dateStr = window.storageService.formatDateIso(d);
+      weekDays.push({
+        dateStr,
+        dayNum: d.getDate(),
+        dayName: dayNames[i],
+        isToday: (dateStr === todayStr),
+        dateObj: d
+      });
+    }
+
+    // 1. Header row
+    let headerColsHtml = '';
+    weekDays.forEach(wd => {
+      headerColsHtml += `
+        <div class="timeline-day-header ${wd.isToday ? 'is-today' : ''}" data-date="${wd.dateStr}">
+          <span class="tl-day-name">${wd.dayName}</span>
+          <span class="tl-day-num">${wd.dayNum}</span>
+        </div>
+      `;
+    });
+
+    const headerRowHtml = `
+      <div class="timeline-header-row">
+        <div class="timeline-time-corner"></div>
+        ${headerColsHtml}
+      </div>
+    `;
+
+    // 2. Time column (08:00 to 23:00)
+    let timeLabelsHtml = '';
+    for (let h = 8; h <= 23; h++) {
+      timeLabelsHtml += `<div class="timeline-time-label">${String(h).padStart(2, '0')}:00</div>`;
+    }
+    const timeColHtml = `
+      <div class="timeline-time-column">
+        ${timeLabelsHtml}
+      </div>
+    `;
+
+    // 3. 7 Day columns
+    let dayColsHtml = '';
+    weekDays.forEach(wd => {
+      let slotsHtml = '';
+      for (let h = 8; h <= 23; h++) {
+        slotsHtml += `<div class="timeline-hour-slot" data-hour="${h}" data-date="${wd.dateStr}"></div>`;
+      }
+
+      let nowIndicatorHtml = '';
+      if (wd.isToday) {
+        const curMins = now.getHours() * 60 + now.getMinutes();
+        if (curMins >= 8 * 60 && curMins <= 24 * 60) {
+          const topPx = (curMins - 8 * 60) * 1;
+          nowIndicatorHtml = `
+            <div class="timeline-now-indicator" style="top: ${topPx}px;">
+              <div class="timeline-now-dot"></div>
+            </div>
+          `;
+        }
+      }
+
+      const events = getTimelineDayEvents(wd.dateStr);
+      let eventsHtml = '';
+      events.forEach(ev => {
+        const topOffsetMin = Math.max(0, ev.startMinutes - 8 * 60);
+        const durMin = Math.max(26, ev.endMinutes - ev.startMinutes);
+        const topPx = topOffsetMin * 1;
+        const heightPx = Math.max(28, durMin * 1 - 3);
+
+        const subColClass = ev.subCol ? ` ${ev.subCol}` : '';
+        const timeStr = `${ev.startTime} - ${ev.endTime}`;
+
+        eventsHtml += `
+          <div class="timeline-event-block ${ev.categoryClass}${subColClass}" 
+               style="top: ${topPx}px; height: ${heightPx}px;"
+               data-event-id="${ev.id}" 
+               data-event-type="${ev.type}">
+            <div class="block-content">
+              <div class="block-title" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>
+              <div class="block-time">${timeStr}</div>
+            </div>
+            ${ev.type === 'lesson' ? '<span class="block-icon">🎹</span>' : ''}
+          </div>
+        `;
+      });
+
+      dayColsHtml += `
+        <div class="timeline-day-column" data-date="${wd.dateStr}">
+          ${nowIndicatorHtml}
+          ${slotsHtml}
+          ${eventsHtml}
+        </div>
+      `;
+    });
+
+    const bodyRowHtml = `
+      <div class="timeline-body-row">
+        ${timeColHtml}
+        ${dayColsHtml}
+      </div>
+    `;
+
+    timelineWeekContainer.innerHTML = `
+      <div class="timeline-scroll-inner">
+        ${headerRowHtml}
+        ${bodyRowHtml}
+      </div>
+    `;
+
+    attachTimelineEventListeners(timelineWeekContainer);
+
+    if (!timelineWeekContainer.dataset.scrolled) {
+      timelineWeekContainer.scrollTop = 180;
+      timelineWeekContainer.dataset.scrolled = '1';
+    }
+  }
+
+  function renderCalendarDayTimeline() {
+    if (!timelineDayContainer) return;
+    const todayStr = window.storageService.formatDateIso(new Date());
+    const now = new Date();
+    const dateStr = calSelectedDate || todayStr;
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    const isToday = (dateStr === todayStr);
+
+    const dayNamesFull = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+    const monthNamesGen = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    const dayTitle = `${dateObj.getDate()} ${monthNamesGen[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+    const daySub = `${dayNamesFull[dateObj.getDay()]}${isToday ? ' (Сегодня)' : ''}`;
+
+    let timeLabelsHtml = '';
+    for (let h = 8; h <= 23; h++) {
+      timeLabelsHtml += `<div class="timeline-time-label">${String(h).padStart(2, '0')}:00</div>`;
+    }
+    const timeColHtml = `
+      <div class="timeline-time-column">
+        ${timeLabelsHtml}
+      </div>
+    `;
+
+    let slotsHtml = '';
+    for (let h = 8; h <= 23; h++) {
+      slotsHtml += `<div class="timeline-hour-slot" data-hour="${h}" data-date="${dateStr}"></div>`;
+    }
+
+    let nowIndicatorHtml = '';
+    if (isToday) {
+      const curMins = now.getHours() * 60 + now.getMinutes();
+      if (curMins >= 8 * 60 && curMins <= 24 * 60) {
+        const topPx = (curMins - 8 * 60) * 1;
+        nowIndicatorHtml = `
+          <div class="timeline-now-indicator" style="top: ${topPx}px;">
+            <div class="timeline-now-dot"></div>
+          </div>
+        `;
+      }
+    }
+
+    const events = getTimelineDayEvents(dateStr);
+    let eventsHtml = '';
+    events.forEach(ev => {
+      const topOffsetMin = Math.max(0, ev.startMinutes - 8 * 60);
+      const durMin = Math.max(26, ev.endMinutes - ev.startMinutes);
+      const topPx = topOffsetMin * 1;
+      const heightPx = Math.max(34, durMin * 1 - 3);
+
+      const subColClass = ev.subCol ? ` ${ev.subCol}` : '';
+      const timeStr = `${ev.startTime} - ${ev.endTime}`;
+
+      eventsHtml += `
+        <div class="timeline-event-block ${ev.categoryClass}${subColClass}" 
+             style="top: ${topPx}px; height: ${heightPx}px;"
+             data-event-id="${ev.id}" 
+             data-event-type="${ev.type}">
+          <div class="block-content">
+            <div class="block-title" style="font-size: 13px;" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>
+            <div class="block-time" style="font-size: 11px;">⏰ ${timeStr} ${ev.subTitle ? `• ${escapeHtml(ev.subTitle)}` : ''}</div>
+          </div>
+          ${ev.type === 'lesson' ? '<span class="block-icon" style="font-size: 14px;">🎹</span>' : ''}
+        </div>
+      `;
+    });
+
+    const dayColHtml = `
+      <div class="timeline-day-column" data-date="${dateStr}">
+        ${nowIndicatorHtml}
+        ${slotsHtml}
+        ${eventsHtml}
+      </div>
+    `;
+
+    timelineDayContainer.innerHTML = `
+      <div class="timeline-day-header-banner" style="padding: 10px 14px; background: #1C1C1F; border-bottom: 1px solid #28282C; display: flex; align-items: center; justify-content: space-between;">
+        <div>
+          <div style="font-size: 15px; font-weight: 700; color: #FFF;">${dayTitle}</div>
+          <div style="font-size: 12px; color: ${isToday ? '#FF453A' : '#8E8E93'}; font-weight: 500;">${daySub}</div>
+        </div>
+        <div style="font-size: 12px; color: #8E8E93;">${events.length} ${getNounPlural(events.length, 'событие', 'события', 'событий')}</div>
+      </div>
+      <div class="timeline-day-body">
+        ${timeColHtml}
+        ${dayColHtml}
+      </div>
+    `;
+
+    attachTimelineEventListeners(timelineDayContainer);
+
+    if (!timelineDayContainer.dataset.scrolled) {
+      timelineDayContainer.scrollTop = 180;
+      timelineDayContainer.dataset.scrolled = '1';
+    }
+  }
+
+  function attachTimelineEventListeners(container) {
+    if (!container) return;
+
+    // Click event block -> open edit modal
+    container.querySelectorAll('.timeline-event-block').forEach(block => {
+      block.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.soundEffects) window.soundEffects.playTap();
+        const id = block.getAttribute('data-event-id');
+        const type = block.getAttribute('data-event-type');
+        if (type === 'lesson') {
+          openEditLessonModal(id);
+        } else {
+          openEditTaskModal(id);
+        }
+      });
+    });
+
+    // Click empty slot -> open add modal or popover
+    container.querySelectorAll('.timeline-hour-slot').forEach(slot => {
+      slot.addEventListener('click', (e) => {
+        if (e.target.closest('.timeline-event-block')) return;
+        if (window.soundEffects) window.soundEffects.playTap();
+        const date = slot.getAttribute('data-date');
+        const hour = parseInt(slot.getAttribute('data-hour'), 10);
+        const startH = String(hour).padStart(2, '0') + ':00';
+
+        calSelectedDate = date;
+        uiState.selectedCalendarDate = date;
+        window.storageService.saveUIState({ selectedCalendarDate: date });
+
+        if (calFilterMode === 'lessons') {
+          openAddLessonModal(date, startH);
+        } else {
+          showCalendarPopover(date, slot);
+        }
+      });
+    });
+
+    // Click day header -> select day and open popover
+    container.querySelectorAll('.timeline-day-header').forEach(hdr => {
+      hdr.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.soundEffects) window.soundEffects.playTap();
+        const date = hdr.getAttribute('data-date');
+        calSelectedDate = date;
+        uiState.selectedCalendarDate = date;
+        window.storageService.saveUIState({ selectedCalendarDate: date });
+        showCalendarPopover(date, hdr);
+      });
+    });
   }
 
   function renderCalendarLegend() {
@@ -1140,24 +1587,21 @@
       });
     }
 
-    // Position Popover
-    const calendarCard = document.querySelector('.calendar-card');
-    if (!calendarCard) return;
-
+    // Position Popover using Fixed Coordinates
     calendarPopover.style.display = 'flex';
     if (calendarPopoverBackdrop) calendarPopoverBackdrop.style.display = 'block';
 
-    const cardRect = calendarCard.getBoundingClientRect();
     const cellRect = cellEl.getBoundingClientRect();
-
-    const cellCenterX = (cellRect.left + cellRect.width / 2) - cardRect.left;
-    const popoverWidth = Math.min(320, cardRect.width - 16);
+    const winWidth = window.innerWidth;
+    const winHeight = window.innerHeight;
+    const popoverWidth = Math.min(320, winWidth - 24);
     calendarPopover.style.width = `${popoverWidth}px`;
 
+    const cellCenterX = cellRect.left + cellRect.width / 2;
     let leftPos = cellCenterX - (popoverWidth / 2);
-    if (leftPos < 8) leftPos = 8;
-    if (leftPos + popoverWidth > cardRect.width - 8) {
-      leftPos = cardRect.width - popoverWidth - 8;
+    if (leftPos < 12) leftPos = 12;
+    if (leftPos + popoverWidth > winWidth - 12) {
+      leftPos = winWidth - popoverWidth - 12;
     }
     calendarPopover.style.left = `${leftPos}px`;
 
@@ -1170,17 +1614,17 @@
 
     // Vertical position
     const popoverHeight = calendarPopover.offsetHeight || 230;
-    const cellTopInCard = cellRect.top - cardRect.top;
-    const cellBottomInCard = cellRect.bottom - cardRect.top;
-
-    if (cellTopInCard > popoverHeight + 15) {
+    if (cellRect.top > popoverHeight + 15) {
       // Above cell
-      const topPos = cellTopInCard - popoverHeight - 10;
+      const topPos = cellRect.top - popoverHeight - 10;
       calendarPopover.style.top = `${topPos}px`;
       if (popoverBeak) popoverBeak.className = 'popover-beak beak-bottom';
     } else {
       // Below cell
-      const topPos = cellBottomInCard + 10;
+      let topPos = cellRect.bottom + 10;
+      if (topPos + popoverHeight > winHeight - 10) {
+        topPos = Math.max(10, winHeight - popoverHeight - 10);
+      }
       calendarPopover.style.top = `${topPos}px`;
       if (popoverBeak) popoverBeak.className = 'popover-beak beak-top';
     }
@@ -2116,58 +2560,114 @@
       renderTasksScreen();
     });
 
-    // Dual Calendar Mode Switchers
-    btnCalModeTasks.addEventListener('click', () => {
-      if (window.soundEffects) window.soundEffects.playTap();
-      uiState.calendarMode = 'tasks';
-      window.storageService.saveUIState({ calendarMode: 'tasks' });
-      btnCalModeTasks.classList.add('active');
-      btnCalModeTeaching.classList.remove('active');
-      renderDualCalendar();
-    });
+    // Calendar View Segmented Switchers (День / Неделя / Месяц)
+    if (btnCalViewDay) {
+      btnCalViewDay.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        calViewMode = 'day';
+        renderDualCalendar();
+      });
+    }
 
-    btnCalModeTeaching.addEventListener('click', () => {
-      if (window.soundEffects) window.soundEffects.playTap();
-      uiState.calendarMode = 'teaching';
-      window.storageService.saveUIState({ calendarMode: 'teaching' });
-      btnCalModeTeaching.classList.add('active');
-      btnCalModeTasks.classList.remove('active');
-      renderDualCalendar();
-    });
+    if (btnCalViewWeek) {
+      btnCalViewWeek.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        calViewMode = 'week';
+        renderDualCalendar();
+      });
+    }
 
-    // Calendar Month Navigation
-    btnCalPrevMonth.addEventListener('click', () => {
-      if (window.soundEffects) window.soundEffects.playTap();
-      if (calCurrentMonth === 0) {
-        calCurrentMonth = 11;
-        calCurrentYear--;
-      } else {
-        calCurrentMonth--;
-      }
-      renderDualCalendar();
-    });
+    if (btnCalViewMonth) {
+      btnCalViewMonth.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        calViewMode = 'month';
+        renderDualCalendar();
+      });
+    }
 
-    btnCalNextMonth.addEventListener('click', () => {
-      if (window.soundEffects) window.soundEffects.playTap();
-      if (calCurrentMonth === 11) {
-        calCurrentMonth = 0;
-        calCurrentYear++;
-      } else {
-        calCurrentMonth++;
-      }
-      renderDualCalendar();
-    });
+    // Calendar Filter Capsules (Все / Уроки)
+    if (btnCalFilterAll) {
+      btnCalFilterAll.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        calFilterMode = 'all';
+        renderDualCalendar();
+      });
+    }
 
-    btnCalToday.addEventListener('click', () => {
-      if (window.soundEffects) window.soundEffects.playTap();
-      const today = new Date();
-      calCurrentYear = today.getFullYear();
-      calCurrentMonth = today.getMonth();
-      calSelectedDate = window.storageService.formatDateIso(today);
-      uiState.selectedCalendarDate = calSelectedDate;
-      window.storageService.saveUIState({ selectedCalendarDate: calSelectedDate });
-      renderDualCalendar();
-    });
+    if (btnCalFilterLessons) {
+      btnCalFilterLessons.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        calFilterMode = 'lessons';
+        renderDualCalendar();
+      });
+    }
+
+    // Calendar Period Navigation (‹ / › / Сегодня)
+    if (btnCalPrev) {
+      btnCalPrev.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        if (calViewMode === 'week') {
+          if (!currentWeekMonday) currentWeekMonday = getMonday(new Date());
+          currentWeekMonday.setDate(currentWeekMonday.getDate() - 7);
+          calCurrentYear = currentWeekMonday.getFullYear();
+          calCurrentMonth = currentWeekMonday.getMonth();
+        } else if (calViewMode === 'day') {
+          const d = calSelectedDate ? new Date(calSelectedDate + 'T00:00:00') : new Date();
+          d.setDate(d.getDate() - 1);
+          calSelectedDate = window.storageService.formatDateIso(d);
+          calCurrentYear = d.getFullYear();
+          calCurrentMonth = d.getMonth();
+        } else {
+          if (calCurrentMonth === 0) {
+            calCurrentMonth = 11;
+            calCurrentYear--;
+          } else {
+            calCurrentMonth--;
+          }
+        }
+        renderDualCalendar();
+      });
+    }
+
+    if (btnCalNext) {
+      btnCalNext.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        if (calViewMode === 'week') {
+          if (!currentWeekMonday) currentWeekMonday = getMonday(new Date());
+          currentWeekMonday.setDate(currentWeekMonday.getDate() + 7);
+          calCurrentYear = currentWeekMonday.getFullYear();
+          calCurrentMonth = currentWeekMonday.getMonth();
+        } else if (calViewMode === 'day') {
+          const d = calSelectedDate ? new Date(calSelectedDate + 'T00:00:00') : new Date();
+          d.setDate(d.getDate() + 1);
+          calSelectedDate = window.storageService.formatDateIso(d);
+          calCurrentYear = d.getFullYear();
+          calCurrentMonth = d.getMonth();
+        } else {
+          if (calCurrentMonth === 11) {
+            calCurrentMonth = 0;
+            calCurrentYear++;
+          } else {
+            calCurrentMonth++;
+          }
+        }
+        renderDualCalendar();
+      });
+    }
+
+    if (btnCalToday) {
+      btnCalToday.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        const today = new Date();
+        calCurrentYear = today.getFullYear();
+        calCurrentMonth = today.getMonth();
+        calSelectedDate = window.storageService.formatDateIso(today);
+        currentWeekMonday = getMonday(today);
+        uiState.selectedCalendarDate = calSelectedDate;
+        window.storageService.saveUIState({ selectedCalendarDate: calSelectedDate });
+        renderDualCalendar();
+      });
+    }
 
     // Lesson Sheet Events
     closeLessonSheetBtn.addEventListener('click', () => closeSheet(lessonSheet));

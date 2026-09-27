@@ -1700,51 +1700,385 @@ input:checked + .slider::before {
    DUAL CALENDAR STYLES (ДВОЙНОЙ КАЛЕНДАРЬ)
    ========================================================================== */
 
-/* Mode Switcher Segmented Control */
-.calendar-switch-container {
-  margin-bottom: 14px;
+/* Calendar Top Bar Controls */
+.calendar-top-bar {
+  margin-bottom: 12px;
 }
 
-.calendar-segmented-control {
+.cal-controls-row {
   display: flex;
-  background: rgba(235, 221, 203, 0.65);
-  padding: 4px;
-  border-radius: var(--radius-pill);
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
 }
 
-.cal-segment-btn {
-  flex: 1;
-  padding: 9px 12px;
+/* View Switcher Segmented Control (День / Неделя / Месяц) as in screenshot */
+.cal-view-segmented {
+  display: inline-flex;
+  background: rgba(36, 23, 14, 0.08);
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  gap: 2px;
+}
+
+.cal-view-btn {
+  padding: 6px 14px;
   border-radius: var(--radius-pill);
   border: none;
   background: transparent;
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--espresso-600);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  transition: all 0.18s ease;
 }
 
-.cal-segment-btn.active {
+.cal-view-btn.active {
   background: #FFFFFF;
   color: var(--espresso-900);
-  box-shadow: 0 2px 8px rgba(51, 34, 22, 0.08);
+  box-shadow: 0 1px 5px rgba(36, 23, 14, 0.12);
   font-weight: 700;
 }
 
-/* Month Navigation */
-.calendar-month-nav {
+/* Filter Capsules (Все / Только уроки) */
+.cal-filter-capsules {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.cal-filter-pill {
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--espresso-600);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cal-filter-pill.active {
+  background: var(--espresso-900);
+  color: #FFFFFF;
+  border-color: var(--espresso-900);
+}
+
+/* Period Navigation */
+.calendar-period-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
   padding: 0 4px;
+}
+
+.btn-today-red {
+  color: #FF3B30 !important;
+  font-weight: 700 !important;
+  border-color: rgba(255, 59, 48, 0.25) !important;
+}
+
+/* ==========================================================================
+   BLOCK-BASED WEEK TIMELINE STYLES (БЛОЧНЫЙ КАЛЕНДАРЬ КАК НА ФОТО)
+   ========================================================================== */
+.calendar-week-view, .calendar-day-view {
+  width: 100%;
+}
+
+.timeline-block-card {
+  background: #141416; /* Deep dark graphite background from screenshot */
+  border: 1px solid #28282C;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-grid-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 720px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.timeline-scroll-inner {
+  min-width: 720px; /* Ensures readable columns on phones */
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 820px) {
+  .timeline-scroll-inner {
+    min-width: 100%;
+  }
+}
+
+/* Header Row for Weekdays */
+.timeline-header-row {
+  display: grid;
+  grid-template-columns: 46px repeat(7, 1fr);
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: #1C1C1F;
+  border-bottom: 1px solid #2A2A2E;
+  padding: 6px 0;
+  user-select: none;
+}
+
+.timeline-time-corner {
+  width: 46px;
+  border-right: 1px solid #2A2A2E;
+}
+
+.timeline-day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.timeline-day-header:last-child {
+  border-right: none;
+}
+
+.tl-day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8E8E93;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tl-day-num {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.timeline-day-header.is-today .tl-day-name {
+  color: #FF453A;
+}
+
+.timeline-day-header.is-today .tl-day-num {
+  background: #FF453A;
+  color: #FFFFFF;
+  box-shadow: 0 0 8px rgba(255, 69, 58, 0.5);
+}
+
+/* Body: Left sticky time column + 7 day columns */
+.timeline-body-row {
+  display: grid;
+  grid-template-columns: 46px repeat(7, 1fr);
+  position: relative;
+  height: 960px; /* 16 hours * 60px/hour */
+  background: #141416;
+}
+
+.timeline-time-column {
+  position: sticky;
+  left: 0;
+  z-index: 20;
+  background: #141416;
+  border-right: 1px solid #28282C;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.timeline-time-label {
+  height: 60px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #7A7A80;
+  text-align: right;
+  padding-right: 6px;
+  transform: translateY(-8px);
+}
+
+/* Day Columns */
+.timeline-day-column {
+  position: relative;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  height: 100%;
+}
+
+.timeline-day-column:last-child {
+  border-right: none;
+}
+
+.timeline-hour-slot {
+  height: 60px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.timeline-hour-slot:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Subtle 30-min dashed line */
+.timeline-hour-slot::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 30px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.025);
+  pointer-events: none;
+}
+
+/* Floating Timeline Event Blocks (Блоки уроков и пар) */
+.timeline-event-block {
+  position: absolute;
+  z-index: 5;
+  left: 2px;
+  right: 2px;
+  background: #28282B;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  border-left: 3.5px solid #FFFFFF;
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
+  overflow: hidden;
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.timeline-event-block:active {
+  transform: scale(0.97);
+  background: #36363C;
+}
+
+.timeline-event-block.sub-col-left {
+  right: 51%;
+}
+
+.timeline-event-block.sub-col-right {
+  left: 51%;
+}
+
+.block-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.block-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.block-time {
+  font-size: 10px;
+  color: #A5A5AA;
+  margin-top: 2px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.block-icon {
+  font-size: 10px;
+  color: #7E7E84;
+  flex-shrink: 0;
+}
+
+/* Category Accent Border Colors */
+.timeline-event-block.block-lesson {
+  border-left-color: #34C759; /* Bright green for teaching lessons */
+  background: #1F2822;
+}
+
+.timeline-event-block.block-deadline {
+  border-left-color: #FF453A; /* Red for urgent deadlines */
+  background: #2E1F21;
+}
+
+.timeline-event-block.block-pair {
+  border-left-color: #FFD60A; /* Warm gold for pairs / college */
+  background: #29261D;
+}
+
+.timeline-event-block.block-regular {
+  border-left-color: #FFFFFF; /* Sleek white stripe from screenshot */
+  background: #28282C;
+}
+
+.timeline-event-block.block-completed {
+  opacity: 0.45;
+  border-left-color: #636366;
+}
+
+.timeline-event-block.block-completed .block-title {
+  text-decoration: line-through;
+}
+
+/* Red Current Time Line */
+.timeline-now-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #FF3B30;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.timeline-now-dot {
+  position: absolute;
+  left: -4px;
+  top: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #FF3B30;
+  box-shadow: 0 0 6px rgba(255, 59, 48, 0.8);
+}
+
+/* Single Day View Wrapper */
+.timeline-day-wrapper {
+  width: 100%;
+  overflow-y: auto;
+  max-height: 720px;
+}
+
+.timeline-day-body {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  position: relative;
+  height: 960px;
+  background: #141416;
+}
+
+/* Mode Switcher Segmented Control */
+.calendar-switch-container {
+  margin-bottom: 14px;
 }
 
 .btn-cal-nav {
@@ -1964,7 +2298,7 @@ input:checked + .slider::before {
 }
 
 .calendar-popover {
-  position: absolute;
+  position: fixed;
   z-index: 75;
   width: 320px;
   max-width: calc(100vw - 24px);

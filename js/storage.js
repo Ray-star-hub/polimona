@@ -92,6 +92,26 @@ class StorageService {
       const nextWeekDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       const nextWeekDateStr = this.formatDateIso(nextWeekDate);
 
+      // Compute Monday of current week
+      const dayOfWeek = now.getDay();
+      const diffToMon = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      const monDate = new Date(now);
+      monDate.setDate(diffToMon);
+
+      const getWeekDate = (offset) => {
+        const d = new Date(monDate);
+        d.setDate(monDate.getDate() + offset);
+        return this.formatDateIso(d);
+      };
+
+      const monStr = getWeekDate(0);
+      const tueStr = getWeekDate(1);
+      const wedStr = getWeekDate(2);
+      const thuStr = getWeekDate(3);
+      const friStr = getWeekDate(4);
+      const satStr = getWeekDate(5);
+      const sunStr = getWeekDate(6);
+
       const sampleTasks = [
         {
           id: 'task-seed-1',
@@ -126,7 +146,7 @@ class StorageService {
           categoryId: 'cat-study',
           taskType: 'regular',
           isDeadline: false,
-          deadlineDate: todayStr,
+          deadlineDate: monStr,
           deadlineTime: '11:40',
           deadlineEndTime: '12:40',
           priority: 'medium',
@@ -140,7 +160,7 @@ class StorageService {
           categoryId: 'cat-study',
           taskType: 'regular',
           isDeadline: false,
-          deadlineDate: todayStr,
+          deadlineDate: monStr,
           deadlineTime: '13:30',
           deadlineEndTime: '15:00',
           priority: 'medium',
@@ -160,129 +180,219 @@ class StorageService {
           priority: 'low',
           completed: false,
           createdAt: new Date().toISOString()
-        },
-        {
-          id: 'task-seed-6',
-          title: 'Замена струн на акустической гитаре',
-          description: 'Поставить свежий комплект Elixir 11-52 и обработать накладку лимонным маслом.',
-          categoryId: 'cat-personal',
-          taskType: 'regular',
-          isDeadline: false,
-          deadlineDate: overdueDateStr,
-          deadlineTime: '12:00',
-          deadlineEndTime: '13:00',
-          priority: 'low',
-          completed: true,
-          completedAt: new Date().toISOString(),
-          createdAt: new Date(Date.now() - 4 * 86400000).toISOString()
         }
       ];
 
       this.saveTasks(sampleTasks);
     }
 
-    // 5. Teaching Lessons Seed
-    if (!localStorage.getItem(STORAGE_KEYS.LESSONS)) {
+    // 5. Teaching Lessons Seed (Matching user's timetable screenshot)
+    if (!localStorage.getItem(STORAGE_KEYS.LESSONS) || !localStorage.getItem('polimona_timeline_seeded_v8')) {
       const now = new Date();
-      const todayStr = this.formatDateIso(now);
+      const dayOfWeek = now.getDay();
+      const diffToMon = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+      const monDate = new Date(now);
+      monDate.setDate(diffToMon);
 
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      const tomorrowStr = this.formatDateIso(tomorrow);
+      const getWeekDate = (offset) => {
+        const d = new Date(monDate);
+        d.setDate(monDate.getDate() + offset);
+        return this.formatDateIso(d);
+      };
 
-      const afterTomorrow = new Date(now);
-      afterTomorrow.setDate(now.getDate() + 2);
-      const afterTomorrowStr = this.formatDateIso(afterTomorrow);
+      const tueStr = getWeekDate(1);
+      const wedStr = getWeekDate(2);
+      const thuStr = getWeekDate(3);
+      const friStr = getWeekDate(4);
+      const satStr = getWeekDate(5);
+      const sunStr = getWeekDate(6);
 
       const sampleLessons = [
-        // Today: Lessons matching schedule
+        // Tue (29):
         {
-          id: 'lesson-seed-1',
-          date: todayStr,
-          startTime: '12:00',
-          endTime: '13:00',
-          studentName: 'Руслана 2/4',
-          subject: 'Вокал',
-          notes: 'Распевка, дыхание, вокальный репертуар',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-seed-2',
-          date: todayStr,
-          startTime: '19:00',
-          endTime: '20:00',
-          studentName: 'Татьяна Высокосова',
-          subject: 'Фортепиано',
-          notes: 'Чтение нот, блюзовый квадрат, оплата +3200',
-          status: 'scheduled'
-        },
-
-        // Tomorrow: 5 back-to-back lessons (busy day -> grey!)
-        {
-          id: 'lesson-seed-3',
-          date: tomorrowStr,
-          startTime: '11:00',
-          endTime: '12:30',
-          studentName: 'Елизавета',
-          subject: 'Вокал',
-          notes: 'Подготовка к вокальному конкурсу',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-seed-4',
-          date: tomorrowStr,
-          startTime: '12:30',
+          id: 'lesson-s-1',
+          date: tueStr,
+          startTime: '13:00',
           endTime: '14:00',
-          studentName: 'Даниил',
-          subject: 'Сольфеджио',
-          notes: 'Интервалы, диктанты, септаккорды',
+          studentName: 'Ольга урок',
+          subject: 'Вокал',
+          notes: 'Постановка дыхания',
           status: 'scheduled'
         },
         {
-          id: 'lesson-seed-5',
-          date: tomorrowStr,
+          id: 'lesson-s-2',
+          date: tueStr,
           startTime: '14:30',
           endTime: '16:00',
-          studentName: 'София',
+          studentName: 'Кристина урок',
           subject: 'Фортепиано',
-          notes: 'Этюды Черни, прелюдия Шопена',
+          notes: 'Гаммы, репертуар',
           status: 'scheduled'
         },
         {
-          id: 'lesson-seed-6',
-          date: tomorrowStr,
-          startTime: '16:30',
-          endTime: '18:00',
-          studentName: 'Иван',
-          subject: 'Гитара',
-          notes: 'Бой, баррэ, фингерстайл вступление',
-          status: 'scheduled'
-        },
-        {
-          id: 'lesson-seed-7',
-          date: tomorrowStr,
+          id: 'lesson-s-3',
+          date: tueStr,
           startTime: '18:15',
-          endTime: '19:45',
-          studentName: 'Мария',
+          endTime: '19:15',
+          studentName: 'Виктория урок',
           subject: 'Вокал',
-          notes: 'Джазовый стандарт Autumn Leaves',
+          notes: 'Распевка, дыхание',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-4',
+          date: tueStr,
+          startTime: '19:15',
+          endTime: '20:15',
+          studentName: 'Анастасия урок',
+          subject: 'Фортепиано',
+          notes: 'Сольфеджио, чтение нот',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-5',
+          date: tueStr,
+          startTime: '20:15',
+          endTime: '21:15',
+          studentName: 'Урок Артур (Германия)',
+          subject: 'Вокал',
+          notes: 'Онлайн урок, Zoom',
           status: 'scheduled'
         },
 
-        // Day after tomorrow: 1 afternoon lesson (green window!)
+        // Wed (30):
         {
-          id: 'lesson-seed-8',
-          date: afterTomorrowStr,
+          id: 'lesson-s-6',
+          date: wedStr,
           startTime: '15:00',
-          endTime: '16:30',
-          studentName: 'Артём',
+          endTime: '16:00',
+          studentName: 'Сафина урок',
+          subject: 'Вокал',
+          notes: 'Подготовка к конкурсу',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-7',
+          date: wedStr,
+          startTime: '17:00',
+          endTime: '18:00',
+          studentName: 'Сергей урок',
+          subject: 'Гитара',
+          notes: 'Аккорды, ритмика',
+          status: 'scheduled'
+        },
+
+        // Thu (1):
+        {
+          id: 'lesson-s-8',
+          date: thuStr,
+          startTime: '14:30',
+          endTime: '16:00',
+          studentName: 'Кристина урок',
           subject: 'Фортепиано',
-          notes: 'Чтение с листа, блюзовый квадрат',
+          notes: 'Пальцевая техника',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-9',
+          date: thuStr,
+          startTime: '18:00',
+          endTime: '19:00',
+          studentName: 'Даня урок',
+          subject: 'Вокал',
+          notes: 'Интонация, фразировка',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-10',
+          date: thuStr,
+          startTime: '19:00',
+          endTime: '20:00',
+          studentName: 'Виктория урок',
+          subject: 'Вокал',
+          notes: 'Эстрадный вокал',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-11',
+          date: thuStr,
+          startTime: '20:00',
+          endTime: '21:00',
+          studentName: 'Урок Артур (Германия)',
+          subject: 'Вокал',
+          notes: 'Онлайн урок',
+          status: 'scheduled'
+        },
+
+        // Fri (2):
+        {
+          id: 'lesson-s-12',
+          date: friStr,
+          startTime: '13:00',
+          endTime: '14:00',
+          studentName: 'Ольга урок',
+          subject: 'Вокал',
+          notes: 'Репертуар',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-13',
+          date: friStr,
+          startTime: '15:00',
+          endTime: '16:00',
+          studentName: 'Сафина урок',
+          subject: 'Вокал',
+          notes: 'Распевки',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-14',
+          date: friStr,
+          startTime: '17:00',
+          endTime: '18:00',
+          studentName: 'Анастасия урок',
+          subject: 'Фортепиано',
+          notes: 'Блюзовый квадрат',
+          status: 'scheduled'
+        },
+
+        // Sat (3):
+        {
+          id: 'lesson-s-15',
+          date: satStr,
+          startTime: '11:00',
+          endTime: '12:00',
+          studentName: 'Юрий урок',
+          subject: 'Гитара',
+          notes: 'Фингерстайл',
+          status: 'scheduled'
+        },
+        {
+          id: 'lesson-s-16',
+          date: satStr,
+          startTime: '13:00',
+          endTime: '14:00',
+          studentName: 'Даня урок',
+          subject: 'Вокал',
+          notes: 'Дыхание',
+          status: 'scheduled'
+        },
+
+        // Sun (4):
+        {
+          id: 'lesson-s-17',
+          date: sunStr,
+          startTime: '13:00',
+          endTime: '14:00',
+          studentName: 'Рассылка Расписания',
+          subject: 'Теория',
+          notes: 'Согласовать время уроков на следующую неделю',
           status: 'scheduled'
         }
       ];
 
       this.saveLessons(sampleLessons);
+      localStorage.setItem('polimona_timeline_seeded_v8', 'true');
     }
   }
 
