@@ -60,9 +60,13 @@
         <span>Все</span>
         <span class="badge" id="countAll">0</span>
       </button>
-      <button class="summary-pill burn-pill" data-filter="burning">
-        <span>🔥 Горят</span>
-        <span class="badge" id="countBurning">0</span>
+      <button class="summary-pill" data-filter="regular">
+        <span>📝 Задачи</span>
+        <span class="badge" id="countRegular">0</span>
+      </button>
+      <button class="summary-pill burn-pill" data-filter="deadlines">
+        <span>🔥 Дедлайны</span>
+        <span class="badge" id="countDeadlines">0</span>
       </button>
       <button class="summary-pill" data-filter="active">
         <span>В работе</span>
@@ -352,13 +356,39 @@
       <form id="taskForm" class="sheet-body">
         <input type="hidden" id="taskIdInput">
 
+        <!-- 0. Переключатель типа: Обычная задача vs Срочный дедлайн -->
+        <div class="form-group">
+          <label class="form-label">
+            <span>Тип записи</span>
+          </label>
+          <div class="task-type-segmented-control" role="radiogroup" aria-label="Тип записи">
+            <label class="task-type-segment-opt" id="typeOptRegular">
+              <input type="radio" name="taskType" value="regular" checked>
+              <div class="task-type-segment-box">
+                <span class="type-seg-icon">📝</span>
+                <span class="type-seg-title">Обычная задача</span>
+              </div>
+            </label>
+            <label class="task-type-segment-opt" id="typeOptDeadline">
+              <input type="radio" name="taskType" value="deadline">
+              <div class="task-type-segment-box">
+                <span class="type-seg-icon">🔥</span>
+                <span class="type-seg-title">Срочный дедлайн</span>
+              </div>
+            </label>
+          </div>
+          <div class="task-type-note" id="taskTypeNote">
+            Для пар, уроков, репетиций и списков дел — не горит красным
+          </div>
+        </div>
+
         <!-- 1. Название задачи -->
         <div class="form-group">
           <label class="form-label" for="taskTitleInput">
-            <span>Название задачи</span>
+            <span id="taskTitleLabel">Название задачи</span>
             <span style="color: var(--burn-text);">*</span>
           </label>
-          <input type="text" id="taskTitleInput" class="form-input" placeholder="Например: Записать вокальные гармонии" required autocomplete="off">
+          <input type="text" id="taskTitleInput" class="form-input" placeholder="Например: Сходить на пару по полифонии" required autocomplete="off">
         </div>
 
         <!-- 2. Описание -->
@@ -367,7 +397,7 @@
             <span>Описание</span>
             <span class="form-label-hint">(необязательно)</span>
           </label>
-          <textarea id="taskDescInput" class="form-textarea" placeholder="Детали, тональность, контакты звукорежиссёра..."></textarea>
+          <textarea id="taskDescInput" class="form-textarea" placeholder="Детали, аудитория, домашнее задание, ноты..."></textarea>
         </div>
 
         <!-- 3. Категория -->
@@ -386,19 +416,22 @@
           </div>
         </div>
 
-        <!-- 4 & 5. Дата и Время дедлайна -->
+        <!-- 4 & 5. Дата и Время -->
         <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label" for="taskDeadlineDate">
-              <span>📅 Дата дедлайна</span>
-            </label>
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <label class="form-label" for="taskDeadlineDate">
+                <span id="taskDateLabel">📅 Дата</span>
+              </label>
+              <button type="button" class="btn-clear-date" id="btnClearTaskDate" title="Очистить дату">✕ Без даты</button>
+            </div>
             <input type="date" id="taskDeadlineDate" class="form-input">
           </div>
           <div class="form-group">
             <label class="form-label" for="taskDeadlineTime">
-              <span>⏰ Время</span>
+              <span id="taskTimeLabel">⏰ Время</span>
             </label>
-            <input type="time" id="taskDeadlineTime" class="form-input" value="18:00">
+            <input type="time" id="taskDeadlineTime" class="form-input" value="13:30">
           </div>
         </div>
 

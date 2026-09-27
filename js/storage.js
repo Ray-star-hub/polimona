@@ -76,6 +76,7 @@ class StorageService {
     // 4. Tasks Seed
     if (!localStorage.getItem(STORAGE_KEYS.TASKS)) {
       const now = new Date();
+      const todayStr = this.formatDateIso(now);
 
       const burningDate = new Date(now.getTime() + 6 * 60 * 60 * 1000);
       const burningDateStr = this.formatDateIso(burningDate);
@@ -97,6 +98,8 @@ class StorageService {
           title: 'Финальный саундчек перед акустическим сетом',
           description: 'Проверить микрофон Shure SM58, отстроить мониторную линию и пресеты реверберации.',
           categoryId: 'cat-performance',
+          taskType: 'deadline',
+          isDeadline: true,
           deadlineDate: burningDateStr,
           deadlineTime: burningTimeStr,
           priority: 'high',
@@ -108,6 +111,8 @@ class StorageService {
           title: 'Сдать нотную партитуру для струнного квартета',
           description: 'Внести правки дирижёра в партию альта и распечатать чистые партии.',
           categoryId: 'cat-study',
+          taskType: 'deadline',
+          isDeadline: true,
           deadlineDate: overdueDateStr,
           deadlineTime: overdueTimeStr,
           priority: 'high',
@@ -116,11 +121,13 @@ class StorageService {
         },
         {
           id: 'task-seed-3',
-          title: 'Запись вокальных дабл-треков в студии',
-          description: 'Распеться за 40 минут до начала, прописать гармонии для припева трека.',
-          categoryId: 'cat-recording',
-          deadlineDate: futureDateStr,
-          deadlineTime: '16:00',
+          title: 'Сходить на пару по полифонии и гармонии',
+          description: 'Аудитория 304. Разобрать модуляцию в тональности второй степени родства.',
+          categoryId: 'cat-study',
+          taskType: 'regular',
+          isDeadline: false,
+          deadlineDate: todayStr,
+          deadlineTime: '13:30',
           priority: 'medium',
           completed: false,
           createdAt: new Date().toISOString()
@@ -130,6 +137,8 @@ class StorageService {
           title: 'Разучить гармоническую последовательность в Gm',
           description: 'Отработать джазовые альтерации и аппликатуры левой руки.',
           categoryId: 'cat-music',
+          taskType: 'regular',
+          isDeadline: false,
           deadlineDate: futureDateStr,
           deadlineTime: '20:00',
           priority: 'low',
@@ -138,12 +147,14 @@ class StorageService {
         },
         {
           id: 'task-seed-5',
-          title: 'Утвердить райдер и тайминг фестиваля',
-          description: 'Связаться с арт-директором площадки, отправить список оборудования.',
-          categoryId: 'cat-organization',
-          deadlineDate: nextWeekDateStr,
-          deadlineTime: '14:00',
-          priority: 'medium',
+          title: 'Купить новый комплект струн D\'Addario',
+          description: 'Зайти в музыкальный магазин после занятий, калибр 11-52.',
+          categoryId: 'cat-personal',
+          taskType: 'regular',
+          isDeadline: false,
+          deadlineDate: '',
+          deadlineTime: '',
+          priority: 'low',
           completed: false,
           createdAt: new Date().toISOString()
         },
@@ -152,6 +163,8 @@ class StorageService {
           title: 'Замена струн на акустической гитаре',
           description: 'Поставить свежий комплект Elixir 11-52 и обработать накладку лимонным маслом.',
           categoryId: 'cat-personal',
+          taskType: 'regular',
+          isDeadline: false,
           deadlineDate: overdueDateStr,
           deadlineTime: '12:00',
           priority: 'low',
@@ -288,7 +301,35 @@ class StorageService {
   getTasks() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.TASKS);
-      return data ? JSON.parse(data) : [];
+      if (!data) return [];
+      const parsed = JSON.parse(data);
+      let changed = false;
+      parsed.forEach(t => {
+        if (t.isDeadline === undefined) {
+          if (t.taskType === 'deadline') {
+            t.isDeadline = true;
+          } else if (t.taskType === 'regular') {
+            t.isDeadline = false;
+          } else {
+            // Backward compatibility: If seed-1 or seed-2, treat as deadline, otherwise regular
+            if (t.id === 'task-seed-1' || t.id === 'task-seed-2') {
+              t.isDeadline = true;
+              t.taskType = 'deadline';
+            } else {
+              t.isDeadline = false;
+              t.taskType = 'regular';
+            }
+          }
+          changed = true;
+        } else if (!t.taskType) {
+          t.taskType = t.isDeadline ? 'deadline' : 'regular';
+          changed = true;
+        }
+      });
+      if (changed) {
+        this.saveTasks(parsed);
+      }
+      return parsed;
     } catch (e) {
       console.error('Failed to load tasks', e);
       return [];

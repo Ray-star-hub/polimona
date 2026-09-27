@@ -45,7 +45,8 @@
   const summaryPills = document.querySelectorAll('.summary-pill');
 
   const countAll = document.getElementById('countAll');
-  const countBurning = document.getElementById('countBurning');
+  const countRegular = document.getElementById('countRegular');
+  const countDeadlines = document.getElementById('countDeadlines');
   const countActive = document.getElementById('countActive');
   const countCompleted = document.getElementById('countCompleted');
 
@@ -67,6 +68,12 @@
   const taskCategoryOptions = document.getElementById('taskCategoryOptions');
   const taskDeadlineDate = document.getElementById('taskDeadlineDate');
   const taskDeadlineTime = document.getElementById('taskDeadlineTime');
+  const taskTypeInputs = document.querySelectorAll('input[name="taskType"]');
+  const taskTypeNote = document.getElementById('taskTypeNote');
+  const taskTitleLabel = document.getElementById('taskTitleLabel');
+  const taskDateLabel = document.getElementById('taskDateLabel');
+  const taskTimeLabel = document.getElementById('taskTimeLabel');
+  const btnClearTaskDate = document.getElementById('btnClearTaskDate');
   const deleteTaskBtn = document.getElementById('deleteTaskBtn');
   const cancelTaskBtn = document.getElementById('cancelTaskBtn');
   const closeTaskSheetBtn = document.getElementById('closeTaskSheetBtn');
@@ -245,28 +252,63 @@
   }
 
   // -------------------------------------------------------------
-  // Deadline & Urgency Calculations
+  // Deadline & Regular Tasks Evaluation
   // -------------------------------------------------------------
   function evaluateTaskDeadline(task) {
+    const isDeadline = task.isDeadline === true || task.taskType === 'deadline';
+
     if (task.completed) {
       return {
-        level: 5,
+        level: 6,
         status: 'completed',
         label: '✓ Выполнено',
         badgeClass: 'badge-completed',
         isBurning: false,
-        isOverdue: false
+        isOverdue: false,
+        isDeadline
       };
     }
 
-    if (!task.deadlineDate) {
+    // 1. REGULAR TASK (Обычная задача / дело / пара / покупка)
+    if (!isDeadline) {
+      if (!task.deadlineDate) {
+        return {
+          level: 5,
+          status: 'regular-nodate',
+          label: '📝 Обычная задача',
+          badgeClass: 'badge-regular-task',
+          isBurning: false,
+          isOverdue: false,
+          isDeadline: false
+        };
+      }
+
+      const timeStr = task.deadlineTime || '';
+      const plannedObj = new Date(`${task.deadlineDate}T${timeStr || '12:00'}:00`);
+      const formatted = formatRegularDate(plannedObj, !!task.deadlineTime);
+
       return {
         level: 4,
-        status: 'none',
-        label: 'Без дедлайна',
+        status: 'regular-scheduled',
+        label: `📅 ${formatted}`,
+        badgeClass: 'badge-regular-date',
+        isBurning: false,
+        isOverdue: false,
+        isDeadline: false,
+        deadlineObj: plannedObj
+      };
+    }
+
+    // 2. DEADLINE TASK (Срочный дедлайн)
+    if (!task.deadlineDate) {
+      return {
+        level: 3,
+        status: 'deadline-nodate',
+        label: '⏰ Без точной даты',
         badgeClass: 'badge-normal',
         isBurning: false,
-        isOverdue: false
+        isOverdue: false,
+        isDeadline: true
       };
     }
 
@@ -275,7 +317,7 @@
     const now = new Date();
     const diffMs = deadlineObj.getTime() - now.getTime();
 
-    // 1. Дедлайн прошёл
+    // 2.1 Дедлайн прошёл
     if (diffMs < 0) {
       return {
         level: 1,
@@ -284,11 +326,12 @@
         badgeClass: 'badge-overdue',
         isBurning: false,
         isOverdue: true,
+        isDeadline: true,
         deadlineObj
       };
     }
 
-    // 2. Горит дедлайн (меньше 24 часов)
+    // 2.2 Горит дедлайн (меньше 24 часов)
     const twentyFourHoursMs = 24 * 60 * 60 * 1000;
     if (diffMs <= twentyFourHoursMs) {
       const hoursLeft = Math.max(1, Math.round(diffMs / (60 * 60 * 1000)));
@@ -300,21 +343,47 @@
         badgeClass: 'badge-burning',
         isBurning: true,
         isOverdue: false,
+        isDeadline: true,
         deadlineObj
       };
     }
 
-    // 3. Больше 24 часов
+    // 2.3 Больше 24 часов
     const formattedDate = formatDeadlineDate(deadlineObj);
     return {
       level: 3,
       status: 'normal',
-      label: `📅 ${formattedDate}`,
-      badgeClass: 'badge-normal',
+      label: `⏰ Дедлайн: ${formattedDate}`,
+      badgeClass: 'badge-deadline',
       isBurning: false,
       isOverdue: false,
+      isDeadline: true,
       deadlineObj
     };
+  }
+
+  function formatRegularDate(dateObj, hasTime) {
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+
+    const isToday = dateObj.toDateString() === now.toDateString();
+    const isTomorrow = dateObj.toDateString() === tomorrow.toDateString();
+    const isYesterday = dateObj.toDateString() === yesterday.toDateString();
+
+    const hours = String(dateObj.getHours()).padStart(2, '0');
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    const timeStr = `${hours}:${minutes}`;
+
+    if (isToday) return hasTime ? `Сегодня, ${timeStr}` : 'Сегодня';
+    if (isTomorrow) return hasTime ? `Завтра, ${timeStr}` : 'Завтра';
+    if (isYesterday) return hasTime ? `Вчера, ${timeStr}` : 'Вчера';
+
+    const options = { day: 'numeric', month: 'short' };
+    const dateFormatted = dateObj.toLocaleDateString('ru-RU', options);
+    return hasTime ? `${dateFormatted}, ${timeStr}` : dateFormatted;
   }
 
   function formatDeadlineDate(dateObj) {
@@ -341,24 +410,55 @@
     const priorityWeights = { high: 3, medium: 2, low: 1 };
 
     return [...taskList].sort((a, b) => {
+      // 1. Completed tasks always go to bottom
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      if (a.completed && b.completed) {
+        return new Date(b.completedAt || b.createdAt || 0).getTime() - new Date(a.completedAt || a.createdAt || 0).getTime();
+      }
+
       const evalA = evaluateTaskDeadline(a);
       const evalB = evaluateTaskDeadline(b);
 
-      if (evalA.level !== evalB.level) {
-        return evalA.level - evalB.level;
+      // 2. Urgent deadlines (overdue or burning) take top priority
+      const isUrgentA = evalA.isDeadline && (evalA.isOverdue || evalA.isBurning);
+      const isUrgentB = evalB.isDeadline && (evalB.isOverdue || evalB.isBurning);
+
+      if (isUrgentA || isUrgentB) {
+        if (isUrgentA && !isUrgentB) return -1;
+        if (!isUrgentA && isUrgentB) return 1;
+        // Both are urgent: overdue (level 1) before burning (level 2)
+        if (evalA.level !== evalB.level) {
+          return evalA.level - evalB.level;
+        }
+        if (evalA.deadlineObj && evalB.deadlineObj) {
+          return evalA.deadlineObj.getTime() - evalB.deadlineObj.getTime();
+        }
       }
 
+      // 3. Dated tasks & deadlines: chronological order (earliest first)
       if (evalA.deadlineObj && evalB.deadlineObj) {
         const timeDiff = evalA.deadlineObj.getTime() - evalB.deadlineObj.getTime();
         if (timeDiff !== 0) return timeDiff;
+        // Same time: deadline before regular task
+        if (evalA.isDeadline !== evalB.isDeadline) {
+          return evalA.isDeadline ? -1 : 1;
+        }
+      } else if (evalA.deadlineObj && !evalB.deadlineObj) {
+        return -1; // dated task before undated task
+      } else if (!evalA.deadlineObj && evalB.deadlineObj) {
+        return 1;
       }
 
+      // 4. Undated or identical time: priority weight
       const weightA = priorityWeights[a.priority] || 2;
       const weightB = priorityWeights[b.priority] || 2;
       if (weightA !== weightB) {
         return weightB - weightA;
       }
 
+      // 5. Newest creation first
       return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
     });
   }
@@ -379,7 +479,17 @@
       filtered = filtered.filter(t => !t.completed);
     }
 
-    if (uiState.currentFilter === 'burning') {
+    if (uiState.currentFilter === 'regular') {
+      filtered = filtered.filter(t => {
+        const evalRes = evaluateTaskDeadline(t);
+        return !t.completed && !evalRes.isDeadline;
+      });
+    } else if (uiState.currentFilter === 'deadlines') {
+      filtered = filtered.filter(t => {
+        const evalRes = evaluateTaskDeadline(t);
+        return !t.completed && evalRes.isDeadline;
+      });
+    } else if (uiState.currentFilter === 'burning') {
       filtered = filtered.filter(t => {
         const evalRes = evaluateTaskDeadline(t);
         return !t.completed && (evalRes.isBurning || evalRes.isOverdue);
@@ -395,7 +505,8 @@
 
   function updateSummaryCounts() {
     const total = tasks.length;
-    let burningCount = 0;
+    let regularCount = 0;
+    let deadlinesCount = 0;
     let activeCount = 0;
     let completedCount = 0;
 
@@ -405,16 +516,19 @@
       } else {
         activeCount++;
         const evalRes = evaluateTaskDeadline(t);
-        if (evalRes.isBurning || evalRes.isOverdue) {
-          burningCount++;
+        if (evalRes.isDeadline) {
+          deadlinesCount++;
+        } else {
+          regularCount++;
         }
       }
     });
 
-    countAll.textContent = total;
-    countBurning.textContent = burningCount;
-    countActive.textContent = activeCount;
-    countCompleted.textContent = completedCount;
+    if (countAll) countAll.textContent = total;
+    if (countRegular) countRegular.textContent = regularCount;
+    if (countDeadlines) countDeadlines.textContent = deadlinesCount;
+    if (countActive) countActive.textContent = activeCount;
+    if (countCompleted) countCompleted.textContent = completedCount;
   }
 
   // -------------------------------------------------------------
@@ -477,7 +591,7 @@
       const isCollapsed = !!uiState.collapsedCategories[cat.id];
       const hasBurning = sortedCatTasks.some(t => {
         const res = evaluateTaskDeadline(t);
-        return !t.completed && (res.isBurning || res.isOverdue);
+        return !t.completed && res.isDeadline && (res.isBurning || res.isOverdue);
       });
 
       html += `
@@ -525,7 +639,7 @@
     const cat = categories.find(c => c.id === task.categoryId) || { name: 'Общее', icon: '🎵' };
 
     let cardBorderClass = '';
-    if (!task.completed) {
+    if (!task.completed && urgency.isDeadline) {
       if (urgency.isBurning) cardBorderClass = 'burning-border';
       else if (urgency.isOverdue) cardBorderClass = 'overdue-border';
     }
@@ -657,8 +771,12 @@
           <span>⚠️ Просрочен</span>
         </div>
         <div class="legend-item">
-          <span class="cal-dot dot-normal"></span>
-          <span>📅 Дедлайн</span>
+          <span class="cal-dot dot-deadline"></span>
+          <span>⏰ Дедлайн</span>
+        </div>
+        <div class="legend-item">
+          <span class="cal-dot dot-regular"></span>
+          <span>📝 Задача</span>
         </div>
         <div class="legend-item">
           <span class="cal-dot dot-completed"></span>
@@ -748,27 +866,34 @@
         contentHtml = `<span class="cal-window-indicator badge-grey">Занято</span>`;
       }
     } else {
-      // Tasks Calendar: Dots for deadlines
+      // Tasks Calendar: Dots for tasks and deadlines
       const dayTasks = tasks.filter(t => t.deadlineDate === dateStr);
       if (dayTasks.length > 0) {
         let hasBurning = false;
         let hasOverdue = false;
-        let hasNormal = false;
+        let hasDeadline = false;
+        let hasRegular = false;
         let hasCompleted = false;
 
         dayTasks.forEach(t => {
           const res = evaluateTaskDeadline(t);
-          if (t.completed) hasCompleted = true;
-          else if (res.isBurning) hasBurning = true;
-          else if (res.isOverdue) hasOverdue = true;
-          else hasNormal = true;
+          if (t.completed) {
+            hasCompleted = true;
+          } else if (res.isDeadline) {
+            if (res.isBurning) hasBurning = true;
+            else if (res.isOverdue) hasOverdue = true;
+            else hasDeadline = true;
+          } else {
+            hasRegular = true;
+          }
         });
 
         let dotsHtml = '';
         if (hasBurning) dotsHtml += '<span class="cal-dot dot-burning"></span>';
         if (hasOverdue) dotsHtml += '<span class="cal-dot dot-overdue"></span>';
-        if (hasNormal) dotsHtml += '<span class="cal-dot dot-normal"></span>';
-        if (hasCompleted && !hasBurning && !hasOverdue && !hasNormal) {
+        if (hasDeadline) dotsHtml += '<span class="cal-dot dot-deadline"></span>';
+        if (hasRegular) dotsHtml += '<span class="cal-dot dot-regular"></span>';
+        if (hasCompleted && !hasBurning && !hasOverdue && !hasDeadline && !hasRegular) {
           dotsHtml += '<span class="cal-dot dot-completed"></span>';
         }
 
@@ -904,8 +1029,8 @@
       calendarDayDetailsContent.innerHTML = `
         <div class="empty-state" style="padding: 24px 10px;">
           <div style="font-size: 32px; margin-bottom: 6px;">🎼</div>
-          <div class="empty-state-title" style="font-size: 16px;">Дедлайнов на этот день нет</div>
-          <div class="empty-state-text" style="font-size: 13px;">Хотите запланировать репетицию или задачу на эту дату?</div>
+          <div class="empty-state-title" style="font-size: 16px;">На этот день нет задач и дедлайнов</div>
+          <div class="empty-state-text" style="font-size: 13px;">Хотите запланировать пару, репетицию или задачу на эту дату?</div>
           <button class="btn-primary-ghost" id="btnEmptyAddDayTask" style="margin-top: 10px;">
             <span>➕ Создать задачу</span>
           </button>
@@ -1181,19 +1306,43 @@
   // Task Modal Handling
   // -------------------------------------------------------------
   function openAddTaskModal() {
-    openAddTaskModalWithDate(window.storageService.formatDateIso(new Date()));
+    openAddTaskModalWithDate(window.storageService.formatDateIso(new Date()), 'regular');
   }
 
-  function openAddTaskModalWithDate(initialDate) {
+  function updateTaskTypeFormUI(type) {
+    if (type === 'deadline') {
+      if (taskTypeNote) {
+        taskTypeNote.textContent = 'Для сдачи нот, курсовых, заявок на конкурсы (предупредит за 24 ч)';
+      }
+      if (taskTitleLabel) taskTitleLabel.textContent = 'Название дедлайна';
+      if (taskDateLabel) taskDateLabel.textContent = '🔥 Срок сдачи (дедлайн)';
+      if (taskTimeLabel) taskTimeLabel.textContent = '⏰ Время сдачи';
+      if (taskTitleInput) taskTitleInput.placeholder = 'Например: Сдать нотную партитуру для квартета';
+    } else {
+      if (taskTypeNote) {
+        taskTypeNote.textContent = 'Для пар, уроков, репетиций и списков дел — не горит красным';
+      }
+      if (taskTitleLabel) taskTitleLabel.textContent = 'Название задачи';
+      if (taskDateLabel) taskDateLabel.textContent = '📅 Запланировано на';
+      if (taskTimeLabel) taskTimeLabel.textContent = '⏰ Время';
+      if (taskTitleInput) taskTitleInput.placeholder = 'Например: Сходить на пару по полифонии';
+    }
+  }
+
+  function openAddTaskModalWithDate(initialDate, defaultType = 'regular') {
     if (window.soundEffects) window.soundEffects.playTap();
     editingTaskId = null;
-    taskSheetTitle.textContent = 'Новая задача';
+    taskSheetTitle.textContent = defaultType === 'deadline' ? 'Новый дедлайн' : 'Новая задача';
     taskForm.reset();
     taskIdInput.value = '';
     deleteTaskBtn.style.display = 'none';
 
-    taskDeadlineDate.value = initialDate;
-    taskDeadlineTime.value = '18:00';
+    taskDeadlineDate.value = initialDate || '';
+    taskDeadlineTime.value = '13:30';
+
+    const typeRadio = taskForm.querySelector(`input[name="taskType"][value="${defaultType}"]`);
+    if (typeRadio) typeRadio.checked = true;
+    updateTaskTypeFormUI(defaultType);
 
     const defaultPrio = taskForm.querySelector('input[name="priority"][value="medium"]');
     if (defaultPrio) defaultPrio.checked = true;
@@ -1209,13 +1358,20 @@
     if (!task) return;
 
     editingTaskId = id;
-    taskSheetTitle.textContent = 'Редактировать задачу';
+    const isDeadline = task.isDeadline === true || task.taskType === 'deadline';
+    const typeValue = isDeadline ? 'deadline' : 'regular';
+
+    taskSheetTitle.textContent = isDeadline ? 'Редактировать дедлайн' : 'Редактировать задачу';
     taskIdInput.value = task.id;
     taskTitleInput.value = task.title;
     taskDescInput.value = task.description || '';
     taskDeadlineDate.value = task.deadlineDate || '';
-    taskDeadlineTime.value = task.deadlineTime || '18:00';
+    taskDeadlineTime.value = task.deadlineTime || (isDeadline ? '18:00' : '13:30');
     deleteTaskBtn.style.display = 'block';
+
+    const typeRadio = taskForm.querySelector(`input[name="taskType"][value="${typeValue}"]`);
+    if (typeRadio) typeRadio.checked = true;
+    updateTaskTypeFormUI(typeValue);
 
     const prioRadio = taskForm.querySelector(`input[name="priority"][value="${task.priority}"]`);
     if (prioRadio) prioRadio.checked = true;
@@ -1247,9 +1403,13 @@
     const title = taskTitleInput.value.trim();
     if (!title) return;
 
+    const typeChecked = taskForm.querySelector('input[name="taskType"]:checked');
+    const taskType = typeChecked ? typeChecked.value : 'regular';
+    const isDeadline = taskType === 'deadline';
+
     const desc = taskDescInput.value.trim();
     const deadlineDate = taskDeadlineDate.value;
-    const deadlineTime = taskDeadlineTime.value || '18:00';
+    const deadlineTime = deadlineDate ? (taskDeadlineTime.value || (isDeadline ? '18:00' : '13:30')) : '';
     const prioChecked = taskForm.querySelector('input[name="priority"]:checked');
     const priority = prioChecked ? prioChecked.value : 'medium';
     const catChecked = taskForm.querySelector('input[name="taskCategory"]:checked');
@@ -1261,17 +1421,21 @@
         title,
         description: desc,
         categoryId,
+        taskType,
+        isDeadline,
         deadlineDate,
         deadlineTime,
         priority
       });
-      showToast('✨ Задача сохранена');
+      showToast(isDeadline ? '✨ Дедлайн сохранен' : '✨ Задача сохранена');
     } else {
       const newTask = {
         id: 'task_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
         title,
         description: desc,
         categoryId,
+        taskType,
+        isDeadline,
         deadlineDate,
         deadlineTime,
         priority,
@@ -1279,7 +1443,8 @@
         createdAt: new Date().toISOString()
       };
       window.storageService.addTask(newTask);
-      showToast('🎵 Задача добавлена');
+      if (window.soundEffects) window.soundEffects.playTap();
+      showToast(isDeadline ? '🔥 Дедлайн добавлен' : '🎵 Задача добавлена');
     }
 
     closeSheet(taskSheet);
@@ -1722,6 +1887,26 @@
     cancelTaskBtn.addEventListener('click', () => closeSheet(taskSheet));
     taskForm.addEventListener('submit', handleTaskFormSubmit);
     deleteTaskBtn.addEventListener('click', handleDeleteTask);
+
+    if (btnClearTaskDate) {
+      btnClearTaskDate.addEventListener('click', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        taskDeadlineDate.value = '';
+        taskDeadlineTime.value = '';
+      });
+    }
+
+    taskTypeInputs.forEach(input => {
+      input.addEventListener('change', () => {
+        if (window.soundEffects) window.soundEffects.playTap();
+        updateTaskTypeFormUI(input.value);
+        if (editingTaskId) {
+          taskSheetTitle.textContent = input.value === 'deadline' ? 'Редактировать дедлайн' : 'Редактировать задачу';
+        } else {
+          taskSheetTitle.textContent = input.value === 'deadline' ? 'Новый дедлайн' : 'Новая задача';
+        }
+      });
+    });
 
     // Category Sheet Events
     openAddCategoryBtn.addEventListener('click', openAddCategoryModal);
